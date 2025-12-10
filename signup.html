@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <link href="/logo.png" rel="icon">
+  <link href="/logo.png" rel="apple-touch-icon">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .input-rounded {
+      border-radius: 12px;
+    }
+    .step { display: none; }
+    .step.active { display: block; animation: fadeInUp 0.6s ease-in-out; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .blur-glow {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle at center, rgba(168,85,247,0.4), transparent);
+      filter: blur(80px);
+      z-index: -1;
+    }
+    .loading-button::after {
+      content: '';
+      margin-left: 10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-white via-purple-100 to-indigo-100 min-h-screen flex items-center justify-center text-gray-800 p-4 relative overflow-hidden">
+  <div class="blur-glow top-10 left-10"></div>
+  <div class="blur-glow bottom-10 right-10"></div>
+
+  <div class="w-full max-w-md bg-white shadow-xl rounded-xl p-8 fade-in mt-12 relative overflow-hidden">
+    <h2 class="text-2xl font-semibold text-center mb-6">Sign up</h2>
+
+    <form id="signup-form" class="space-y-6">
+      <div class="step active" id="step-1">
+        <div class="flex items-center gap-2 mb-2">
+          <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/98e609fc509ca98568daf03f2cded09a30948213/assets/images/back-arrow-navigation.svg" class="hidden w-4 h-4 cursor-pointer" id="back-1" />
+          <label for="name" class="text-sm font-medium text-gray-700">Work name</label>
+        </div>
+        <input type="text" id="name" required class="w-full px-4 py-3 mt-1 border border-gray-300 input-rounded focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm" />
+        <button type="button" id="next-1" class="mt-6 w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 input-rounded font-semibold hover:scale-105 transition">Next</button>
+      </div>
+      <div class="step" id="step-2">
+        <div class="flex items-center gap-2 mb-2">
+          <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/98e609fc509ca98568daf03f2cded09a30948213/assets/images/back-arrow-navigation.svg" class="w-4 h-4 cursor-pointer" id="back-2" />
+          <label for="email" class="text-sm font-medium text-gray-700">Email</label>
+        </div>
+        <input type="email" id="email" required class="w-full px-4 py-3 mt-1 border border-gray-300 input-rounded focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm" />
+        <button type="button" id="next-2" class="mt-6 w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 input-rounded font-semibold hover:scale-105 transition">Next</button>
+      </div>
+      <div class="step" id="step-3">
+        <div class="flex items-center gap-2 mb-2">
+          <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/98e609fc509ca98568daf03f2cded09a30948213/assets/images/back-arrow-navigation.svg" class="w-4 h-4 cursor-pointer" id="back-3" />
+          <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+        </div>
+        <input type="password" id="password" required class="w-full px-4 py-3 mt-1 border border-gray-300 input-rounded focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm" />
+        <div id="strength-text" class="text-sm text-purple-600 mt-1"></div>
+        <button type="submit" id="submit-btn" class="mt-6 w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 input-rounded font-semibold hover:scale-105 transition">Continue</button>
+      </div>
+    </form>
+
+    <div class="my-6 flex items-center text-sm text-gray-500 font-bold">
+      <div class="flex-grow h-px bg-gray-300"></div>
+      <span class="mx-3">OR</span>
+      <div class="flex-grow h-px bg-gray-300"></div>
+    </div>
+
+    <button id="google-signup" class="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 py-3 rounded-lg shadow-sm hover:bg-gray-50 transition">
+      <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" />
+      <span class="text-sm font-medium">Sign up with Google</span>
+    </button>
+
+    <p class="mt-6 text-center text-sm text-gray-500">
+      Already have an account?
+      <a href="login.html" class="text-purple-600 font-medium hover:underline">Log in</a>
+    </p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const defaultPhoto = "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        window.location.href = "index.html";
+      }
+    });
+
+    const step1 = document.getElementById("step-1");
+    const step2 = document.getElementById("step-2");
+    const step3 = document.getElementById("step-3");
+
+    document.getElementById("next-1").addEventListener("click", () => {
+  const name = document.getElementById("name").value.trim();
+  if (!name) {
+    Swal.fire("Name required", "Please enter your name before continuing.", "warning");
+    return;
+  }
+  step1.classList.remove("active");
+  step2.classList.add("active");
+});
+    document.getElementById("next-2").addEventListener("click", () => {
+  const email = document.getElementById("email").value.trim();
+  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+
+  if (!email) {
+    Swal.fire("Email required", "Please enter your email.", "warning");
+    return;
+  }
+
+  if (!emailRegex.test(email)) {
+    Swal.fire("Invalid Email", "Please enter a valid email address.", "warning");
+    return;
+  }
+
+  step2.classList.remove("active");
+  step3.classList.add("active");
+});
+
+    document.getElementById("back-2").addEventListener("click", () => {
+      step2.classList.remove("active");
+      step1.classList.add("active");
+    });
+    document.getElementById("back-3").addEventListener("click", () => {
+      step3.classList.remove("active");
+      step2.classList.add("active");
+    });
+
+    const passwordInput = document.getElementById("password");
+    const strengthText = document.getElementById("strength-text");
+
+    passwordInput.addEventListener("input", () => {
+      const val = passwordInput.value;
+      let strength = 0;
+      if (val.length >= 8) strength++;
+      if (/[A-Z]/.test(val)) strength++;
+      if (/[0-9]/.test(val)) strength++;
+      if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+      strengthText.textContent =
+        val.length === 0 ? "" :
+        strength <= 1 ? "Weak password 🔴" :
+        strength === 2 ? "Moderate password 🟠" :
+        "Strong password 🟢";
+    });
+
+    document.getElementById("signup-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.classList.add("loading-button");
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        await cred.user.updateProfile({ displayName: name, photoURL: defaultPhoto });
+
+        await db.collection("users").doc(cred.user.uid).set({
+  uid: cred.user.uid,
+  name,
+  email,
+  photoURL: defaultPhoto,
+  xp: 100,
+  badges: [],
+  streak: 0,
+  role: "user",
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+
+        Swal.fire({
+          icon: 'success',
+          title: '🎉 Welcome to BCD!',
+          text: 'You earned 100 XP as a welcome reward!',
+          confirmButtonColor: '#a855f7'
+        });
+
+        setTimeout(() => window.location.href = "index.html", 2000);
+      } catch (err) {
+        Swal.fire("Error", err.message, "error");
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("loading-button");
+      }
+    });
+
+    document.getElementById("google-signup").addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(result => {
+          const user = result.user;
+          return db.collection("users").doc(user.uid).set({
+  uid: user.uid,
+  name: user.displayName,
+  email: user.email,
+  photoURL: user.photoURL || defaultPhoto,
+  xp: 100,
+  badges: [],
+  streak: 0,
+  role: "user",   // ⭐ CORRECT POSITION
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+        })
+        .then(() => {
+          confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+          Swal.fire("Success!", "Signed in with Google!", "success");
+          setTimeout(() => window.location.href = "index.html", 1500);
+        })
+        .catch(error => {
+          Swal.fire("Error", error.message, "error");
+        });
+    });
+  </script>
+</body>
+</html>

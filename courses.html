@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Courses • Books Coffee and Dreams</title>
+
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Swiper -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --accent-from: #7c3aed;
+      --accent-to: #ec4899;
+      --glass-bg: rgba(255,255,255,0.12);
+      --glass-border: rgba(255,255,255,0.16);
+    }
+
+    html,body { height:100%; }
+    body {
+      font-family: 'Outfit', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin:0;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      background: linear-gradient(to bottom right, #ffffff 0%, #f3e8ff 35%, #f5e9ff 65%, #dbeafe 100%);
+      color: #0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* subtle glow blobs */
+    .blur-glow {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle at center, rgba(168,85,247,0.36), transparent);
+      filter: blur(84px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* NAVBAR: centered glass with max width */
+    .nav-glass {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 36px);
+      max-width: 1200px;
+      z-index: 60;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px) saturate(120%);
+      -webkit-backdrop-filter: blur(12px) saturate(120%);
+      border-radius: 14px;
+      box-shadow: 0 8px 26px rgba(16,24,40,0.06);
+      padding: 8px 16px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:56px;
+    }
+
+    .brand { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    .brand img { display:block; width:48px; height:48px; border-radius:10px; object-fit:cover; }
+
+    .nav-links { display:flex; gap:10px; align-items:center; margin-left:6px; }
+    .nav-links a{
+      padding:8px 10px; border-radius:10px; font-weight:600; color: rgba(15,23,42,0.9); text-decoration:none; white-space:nowrap;
+    }
+    .nav-links a:hover { background: rgba(255,255,255,0.06); }
+    .nav-links a.active { background: rgba(255,255,255,0.92); color:#0f172a; box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
+
+    /* Center search - clamp so it never overflows */
+    .nav-center { flex:1; display:flex; justify-content:center; pointer-events:none; }
+    .nav-search {
+      pointer-events:auto;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 8px 30px rgba(15,23,42,0.06);
+      width: clamp(260px, 42vw, 620px);
+      max-width: calc(100% - 300px);
+      transition: transform .12s ease, box-shadow .12s ease;
+      min-width:220px;
+    }
+    .nav-search:focus-within { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(15,23,42,0.08); }
+    .nav-search input { border:0; outline:0; width:100%; background:transparent; font-weight:600; font-size:14px; color:#0f172a; }
+    .nav-search svg { color: #94a3b8; flex-shrink:0; }
+
+    /* right area - compact */
+    .nav-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+    .profile-btn { display:flex; align-items:center; justify-content:center; padding:6px; border-radius:999px; background: rgba(255,255,255,0.9); border:1px solid rgba(15,23,42,0.04); cursor:pointer; text-decoration:none; color:inherit; }
+    .profile-btn img { width:40px; height:40px; border-radius:999px; object-fit:cover; display:block; }
+
+    .chip { background: rgba(15,23,42,0.06); padding:.25rem .5rem; border-radius:999px; font-size:.8rem; display:inline-block; }
+    .price-badge { background: linear-gradient(90deg, var(--accent-from), var(--accent-to)); color:white; border-radius:8px; padding:.25rem .5rem; font-weight:700; font-size:.85rem; }
+    .badge-featured { background: linear-gradient(90deg,#f97316,#a855f7); color:white; padding:.25rem .5rem; border-radius:8px; font-weight:700; font-size:.8rem; }
+
+    /* mobile */
+    .mobile-toggle { display:none; }
+    @media (max-width: 900px) {
+      .nav-search { width: clamp(220px, 60vw, 420px); max-width: calc(100% - 140px); }
+      .nav-links{ display:none; }
+      .mobile-toggle { display:block; }
+    }
+    @media (max-width: 520px) {
+      .nav-glass { width: calc(100% - 20px); left: 10px; transform:none; top:10px; }
+      .nav-search { width: calc(100% - 120px); }
+    }
+
+    main { padding-top: 100px; max-width: 1200px; margin:0 auto; }
+    .hero-card { background: linear-gradient(90deg, rgba(168,85,247,0.10), rgba(236,72,153,0.05)); border-radius:16px; box-shadow: 0 12px 40px rgba(124,58,237,0.06); }
+
+    /* course card styles */
+    .course-card { background:white; border-radius:12px; overflow:hidden; transition: transform .28s, box-shadow .28s; display:flex; flex-direction:column; }
+    .course-card:hover { transform: translateY(-8px); box-shadow: 0 24px 48px rgba(15,23,42,0.12); }
+
+    /* list card specifics (medium width) */
+    .list-container { max-width:920px; margin-left:auto; margin-right:auto; display:flex; gap:16px; align-items:flex-start; }
+    .list-thumb { width:160px; height:100px; flex-shrink:0; border-radius:8px; object-fit:cover; }
+    .list-content { flex:1; display:flex; flex-direction:column; gap:8px; }
+    .list-top { display:flex; align-items:center; gap:12px; justify-content:space-between; }
+    .list-title { font-weight:700; font-size:1rem; color:#0f172a; }
+    .list-meta { color:#475569; font-size:.875rem; }
+
+    /* make sure grid respects gap */
+    .grid-layout { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:1.25rem; }
+    @media (max-width: 1100px) { .grid-layout { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 640px) { .grid-layout { grid-template-columns: 1fr; } }
+
+    /* lightweight utility for button text */
+    .toggle-btn { min-width:160px; }
+  </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden">
+
+  <!-- glow blobs -->
+  <div class="blur-glow top-12 left-8"></div>
+  <div class="blur-glow bottom-[360px] right-12"></div>
+
+  <!-- NAV -->
+  <nav class="nav-glass" role="navigation" aria-label="Main navigation">
+    <div class="brand">
+      <a href="index.html" class="flex items-center gap-3" aria-label="Home">
+        <img id="brandLogo" src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/logo.png"
+             alt="BCD logo"
+             onerror="this.src='https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png'"/>
+      </a>
+
+      <div class="nav-links hidden md:flex ml-3" role="menubar" aria-label="Primary">
+        <a href="index.html" role="menuitem">Home</a>
+        <a href="courses.html" class="active" role="menuitem">Courses</a>
+        <a href="blogs.html" role="menuitem">Blogs</a>
+        <a href="community.html" role="menuitem">Community</a>
+      </div>
+    </div>
+
+    <!-- centered search (Filters button inside) -->
+    <div class="nav-center" aria-hidden="false">
+      <div class="nav-search" role="search" aria-label="Search courses">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M21 21l-4.35-4.35" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+          <circle cx="11" cy="11" r="6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input id="searchInput" type="search" placeholder="Search courses, topics, teachers..." aria-label="Search courses">
+        <button id="filtersBtn" title="Filters" class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full border text-sm bg-white/50" aria-haspopup="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M10 12h4M6 18h12" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg>
+          <span class="text-xs">Filters</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- right -->
+    <div class="nav-right">
+      <!-- removed grid/list here as requested, only avatar -->
+      <a id="profileBtn" href="profile.html" class="profile-btn" aria-label="Profile">
+        <img id="profileAvatar" src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png" alt="profile" />
+      </a>
+
+      <button id="mobileToggle" class="mobile-toggle p-2 rounded bg-white/90 border ml-1" aria-expanded="false" aria-label="Open menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- mobile popover -->
+  <div id="mobileMenu" class="hidden fixed inset-0 z-50 bg-black/40">
+    <div class="absolute top-24 right-4 w-[260px] bg-white rounded-lg shadow-lg p-4">
+      <div class="flex flex-col gap-2">
+        <a href="index.html" class="px-3 py-2 rounded hover:bg-slate-50">Home</a>
+        <a href="courses.html" class="px-3 py-2 rounded bg-slate-100">Courses</a>
+        <a href="blogs.html" class="px-3 py-2 rounded hover:bg-slate-50">Blogs</a>
+        <a href="community.html" class="px-3 py-2 rounded hover:bg-slate-50">Community</a>
+        <div class="border-t my-2"></div>
+        <a href="login.html" class="px-3 py-2 rounded hover:bg-slate-50">Log in</a>
+        <a href="signup.html" class="px-3 py-2 rounded hover:bg-slate-50">Sign up</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="max-w-7xl mx-auto px-6 pb-24 relative z-10">
+    <!-- HERO -->
+    <section class="hero-card p-8 md:p-12 rounded-2xl mb-10" data-aos="fade-up">
+      <div class="grid md:grid-cols-2 gap-6 items-center">
+        <div>
+          <h2 class="text-4xl md:text-5xl font-extrabold leading-tight text-slate-900">Premium courses for ambitious learners ✨</h2>
+          <p class="mt-4 text-lg text-slate-600">Curated study paths, video-led lessons, expert tutors and notes — built for clarity and results.</p>
+
+          <div class="mt-6 flex gap-3 flex-wrap">
+            <button id="showAllBtn" class="px-5 py-3 rounded-full" style="background:linear-gradient(90deg,var(--accent-from),var(--accent-to));color:#fff;font-weight:700;box-shadow:0 8px 30px rgba(124,58,237,0.08);">Browse all courses</button>
+            <button id="featuredScrollBtn" class="px-5 py-3 rounded-full bg-white border font-semibold">See featured</button>
+          </div>
+
+          <div class="mt-6 flex gap-2 items-center text-sm">
+            <div class="chip">JEE</div><div class="chip">NEET</div><div class="chip">Boards</div><div class="chip">Competitive</div>
+          </div>
+        </div>
+
+        <div class="hidden md:block">
+          <div class="swiper featuredSwiper rounded-xl overflow-hidden">
+            <div class="swiper-wrapper" id="heroFeaturedWrap"></div>
+            <div class="swiper-pagination"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="mb-6">
+      <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div class="flex gap-3 flex-wrap">
+          <select id="filterExam" class="px-3 py-2 rounded-lg border">
+            <option value="">All exams</option>
+            <option value="JEE">JEE</option>
+            <option value="NEET">NEET</option>
+            <option value="Boards">Boards</option>
+            <option value="Competitive">Competitive</option>
+          </select>
+
+          <select id="filterPrice" class="px-3 py-2 rounded-lg border">
+            <option value="">All prices</option>
+            <option value="free">Free</option>
+            <option value="paid">Paid</option>
+          </select>
+
+          <select id="sortBy" class="px-3 py-2 rounded-lg border">
+            <option value="featured">Sort: Featured</option>
+            <option value="popular">Sort: Popular</option>
+            <option value="new">Sort: New</option>
+            <option value="price_low">Price: Low → High</option>
+            <option value="price_high">Price: High → Low</option>
+          </select>
+
+          <button id="resetFilters" class="px-3 py-2 rounded-lg border">Reset</button>
+        </div>
+
+        <div class="flex gap-3 items-center">
+          <div class="text-sm text-slate-600">Showing <span id="resultsCount">0</span> courses</div>
+          <!-- Toggle View button (dynamic text) -->
+          <button id="toggleViewBtn" class="px-3 py-2 rounded-lg border toggle-btn">Switch to List View</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured -->
+    <section id="featuredSection" class="mb-10">
+      <h3 class="text-xl font-bold mb-4">⭐ Featured Courses</h3>
+      <div class="grid lg:grid-cols-3 md:grid-cols-2 gap-6" id="featuredGrid"></div>
+    </section>
+
+    <!-- All Courses -->
+    <section id="allCoursesSection">
+      <h3 class="text-xl font-bold mb-4">All courses</h3>
+      <!-- container for grid OR centered list -->
+      <div id="coursesGridWrapper">
+        <div id="coursesGrid" class="grid-layout"></div>
+      </div>
+
+      <div class="mt-8 text-center">
+        <button id="loadMoreBtn" class="px-5 py-3 rounded-full border">Load more</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- AOS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
+  <!-- FIREBASE + LOGIC -->
+  <script type="module">
+  // Firebase modular SDK
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+    authDomain: "bcd-discord.firebaseapp.com",
+    projectId: "bcd-discord",
+    storageBucket: "bcd-discord.appspot.com",
+    messagingSenderId: "278895155371",
+    appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  // helper — FIX OBJ/STRING TEACHERS
+  function getTeacherNames(course) {
+    if (!course.teachers || course.teachers.length === 0) return "Not selected";
+
+    return course.teachers
+      .map(t => {
+        if (typeof t === "string") return t;
+        if (typeof t === "object" && t.name) return t.name;
+        return "Unknown";
+      })
+      .join(", ");
+  }
+
+  // helpers
+  function escapeHtml(s=""){ return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"); }
+  function formatPrice(v){ if (v===undefined||v===null||Number(v)===0) return "Free"; return `₹ ${Number(v).toLocaleString("en-IN")}`; }
+
+  const DEFAULT_AVATAR = "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+  const FALLBACK_IMG = "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/prarambh_3.0.png";
+
+  let allCourses = [];
+  let visibleCount = 9;
+  let featuredSwiper = null;
+  let gridMode = true;
+
+  const featuredGrid = document.getElementById('featuredGrid');
+  const featuredSwiperWrap = document.getElementById('heroFeaturedWrap');
+  const coursesGrid = document.getElementById('coursesGrid');
+  const filterExam = document.getElementById('filterExam');
+  const filterPrice = document.getElementById('filterPrice');
+  const sortBy = document.getElementById('sortBy');
+  const searchInput = document.getElementById('searchInput');
+  const resultsCount = document.getElementById('resultsCount');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const showAllBtn = document.getElementById('showAllBtn');
+  const featuredScrollBtn = document.getElementById('featuredScrollBtn');
+  const toggleViewBtn = document.getElementById('toggleViewBtn');
+  const resetFilters = document.getElementById('resetFilters');
+  const filtersBtn = document.getElementById('filtersBtn');
+  const profileAvatar = document.getElementById('profileAvatar');
+
+  // GRID CARD — FIXED TEACHERS
+  function makeCourseCardGrid(course){
+    const teachers = escapeHtml(getTeacherNames(course));
+    const card = document.createElement('article');
+    card.className = 'course-card p-4';
+
+    card.innerHTML = `
+      <div class="relative overflow-hidden rounded-md">
+        <img loading="lazy" src="${course.thumbnailURL||FALLBACK_IMG}" class="w-full h-44 object-cover rounded-md" />
+        <div class="absolute top-3 left-3">${course.featured?'<span class="badge-featured">Featured</span>':''}</div>
+        <div class="absolute top-3 right-3">${course.isPaid?`<span class="price-badge">${formatPrice(course.price)}</span>`:`<span class="chip">Free</span>`}</div>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-lg font-semibold">${escapeHtml(course.title)}</h3>
+        <p class="text-sm text-slate-700 mt-1">${escapeHtml((course.description||'').slice(0,110))}${course.description.length>110?'...':''}</p>
+        <div class="mt-3 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="chip text-xs">${teachers}</div>
+            <div class="text-xs text-slate-500">${escapeHtml(course.duration||'')}</div>
+          </div>
+          <button class="openCourseBtn px-3 py-1 rounded bg-white border text-xs">Open</button>
+        </div>
+      </div>`;
+
+    card.querySelector('.openCourseBtn').onclick = ()=> 
+      window.location.href=`course-detail.html?id=${course.id}`;
+
+    return card;
+  }
+
+  // LIST CARD — FIXED TEACHERS
+  function makeCourseCardList(course){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'list-container';
+
+    const teachers = escapeHtml(getTeacherNames(course));
+
+    wrapper.innerHTML = `
+      <img class="list-thumb" src="${course.thumbnailURL||FALLBACK_IMG}" />
+      <div class="list-content">
+        <div class="list-top">
+          <div style="flex:1">
+            <div class="list-title">${escapeHtml(course.title)}</div>
+            <div class="list-meta">${teachers} • ${escapeHtml(course.duration||'')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <div class="price-badge" style="padding:.32rem .5rem;font-size:.85rem;">${course.isPaid?formatPrice(course.price):'Free'}</div>
+            <button class="px-3 py-1 rounded bg-white border text-xs">Open</button>
+          </div>
+        </div>
+        <div style="color:#475569;font-size:.95rem;line-height:1.35;">${escapeHtml((course.description||'').slice(0,250))}</div>
+      </div>
+    `;
+
+    wrapper.querySelector('button').onclick = ()=> 
+      window.location.href = `course-detail.html?id=${course.id}`;
+
+    return wrapper;
+  }
+
+  // LOAD COURSES
+  async function loadCoursesFromFirestore(){
+    const q = query(collection(db,'courses'), orderBy('createdAt','desc'));
+    const snaps = await getDocs(q);
+
+    allCourses = snaps.docs.map(s=>{
+      const d = s.data();
+      return {
+        id: s.id,
+        title: d.title || 'Untitled',
+        description: d.description || '',
+        thumbnailURL: d.thumbnailURL || '',
+        price: d.price ?? 0,
+        isPaid: !!d.isPaid,
+        featured: !!d.featured,
+        teachers: d.teachers || [],
+        tags: d.tags || [],
+        xp: d.xp ?? 0,
+        popularity: d.popularity ?? 0,
+        createdAt: d.createdAt ? (d.createdAt.toMillis ? d.createdAt.toMillis() : d.createdAt.seconds*1000) : 0,
+        duration: d.duration || ''
+      };
+    });
+
+    renderAllViews();
+  }
+
+  // RENDER EVERYTHING
+  function renderAllViews(){
+    featuredGrid.innerHTML = '';
+    featuredSwiperWrap.innerHTML = '';
+    coursesGrid.innerHTML = '';
+
+    const featured = allCourses.filter(c=>c.featured).slice(0,6);
+
+    // HERO SLIDER — FIXED TEACHERS
+    featured.forEach(c=>{
+      const slide = document.createElement('div');
+      slide.className='swiper-slide';
+
+      slide.innerHTML = `
+        <div class="relative rounded-lg overflow-hidden h-48">
+          <img src="${c.thumbnailURL||FALLBACK_IMG}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+          <div class="absolute bottom-4 left-4 text-white">
+            <div class="text-sm font-semibold">${escapeHtml(getTeacherNames(c))}</div>
+            <div class="text-xl font-bold">${escapeHtml(c.title)}</div>
+          </div>
+        </div>`;
+
+      featuredSwiperWrap.appendChild(slide);
+    });
+
+    // Featured Grid
+    featured.forEach(c=> featuredGrid.appendChild(makeCourseCardGrid(c)));
+
+    initFeaturedSwiper();
+    renderCoursesGrid();
+    resultsCount.textContent = allCourses.length;
+  }
+
+  // RENDER COURSE GRID/LIST
+  function renderCoursesGrid(){
+    coursesGrid.innerHTML = '';
+
+    let filtered = [...allCourses];
+
+    const q = searchInput.value.toLowerCase().trim();
+    const exam = filterExam.value;
+    const price = filterPrice.value;
+    const sort = sortBy.value;
+
+    filtered = filtered.filter(c=>{
+      const hay = `${c.title} ${c.description} ${getTeacherNames(c)} ${(c.tags||[]).join(' ')}`.toLowerCase();
+      if(q && !hay.includes(q)) return false;
+      if(exam && !(c.tags||[]).map(x=>x.toLowerCase()).includes(exam.toLowerCase())) return false;
+      if(price==='free' && c.isPaid) return false;
+      if(price==='paid' && !c.isPaid) return false;
+      return true;
+    });
+
+    if(sort==='popular') filtered.sort((a,b)=> b.popularity-a.popularity);
+    if(sort==='new') filtered.sort((a,b)=> b.createdAt-a.createdAt);
+    if(sort==='price_low') filtered.sort((a,b)=> a.price-b.price);
+    if(sort==='price_high') filtered.sort((a,b)=> b.price-a.price);
+    if(sort==='featured') filtered.sort((a,b)=> (b.featured?1:0)-(a.featured?1:0));
+
+    const slice = filtered.slice(0,visibleCount);
+
+    if(gridMode){
+      coursesGrid.className='grid-layout';
+      slice.forEach(c=> coursesGrid.appendChild(makeCourseCardGrid(c)));
+    } else {
+      coursesGrid.className='';
+      slice.forEach(c=>{
+        const shell=document.createElement('div');
+        shell.className='p-4 bg-white rounded-lg shadow-sm';
+        shell.appendChild(makeCourseCardList(c));
+        coursesGrid.appendChild(shell);
+      });
+    }
+
+    resultsCount.textContent = filtered.length;
+    loadMoreBtn.style.display = filtered.length > visibleCount ? 'inline-block' : 'none';
+  }
+
+  // INIT SWIPER
+  async function initFeaturedSwiper(){
+    if(typeof Swiper === 'undefined'){
+      await new Promise(res=>{
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
+        s.onload=res;
+        document.head.appendChild(s);
+      });
+    }
+    if(featuredSwiper){
+      try{ featuredSwiper.destroy(true,true); }catch(e){}
+    }
+    featuredSwiper = new Swiper('.featuredSwiper',{slidesPerView:1,loop:true,autoplay:{delay:4200},pagination:{el:'.swiper-pagination',clickable:true}});
+  }
+
+  // Toggle View Button
+  function updateToggleText(){
+    toggleViewBtn.textContent = gridMode ? "Switch to List View" : "Switch to Grid View";
+  }
+  toggleViewBtn.onclick = ()=>{
+    gridMode = !gridMode;
+    updateToggleText();
+    renderCoursesGrid();
+  };
+  updateToggleText();
+
+  // Filter Events
+  function debounce(fn,ms=200){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+  searchInput.addEventListener('input',debounce(renderCoursesGrid,250));
+  filterExam.onchange = filterPrice.onchange = sortBy.onchange = renderCoursesGrid;
+  resetFilters.onclick = ()=>{
+    searchInput.value='';
+    filterExam.value='';
+    filterPrice.value='';
+    sortBy.value='featured';
+    visibleCount=9;
+    renderCoursesGrid();
+  };
+  loadMoreBtn.onclick = ()=>{ visibleCount+=9; renderCoursesGrid(); };
+  showAllBtn.onclick = ()=>{ visibleCount=999; renderCoursesGrid(); };
+  featuredScrollBtn.onclick = ()=> window.scrollTo({top:document.getElementById('featuredSection').offsetTop-80,behavior:'smooth'});
+
+  // AUTH
+  onAuthStateChanged(auth, async (user)=>{
+    if(user){
+      let finalPhoto = user.photoURL || DEFAULT_AVATAR;
+
+      const uSnap = await getDoc(doc(db,"users",user.uid));
+      if(uSnap.exists() && uSnap.data().profileURL){
+        finalPhoto = uSnap.data().profileURL;
+      }
+
+      profileAvatar.src = finalPhoto;
+      profileAvatar.onerror = ()=> profileAvatar.src = DEFAULT_AVATAR;
+    }
+    loadCoursesFromFirestore();
+  });
+
+  AOS.init({duration:900,once:true,offset:40});
+</script>
+
+  <!-- AOS, Sweetalert -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Swiper fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+</body>
+</html>

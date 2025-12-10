@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="/logo.png" rel="icon">
+  <title>Manage Content | Books Coffee and Dreams</title>
+  
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Tools -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+  <style>
+    :root { --accent1: #7c3aed; --accent2: #6d28d9; }
+    body { font-family: Inter, sans-serif; background: #f6f1ff; min-height: 100vh; }
+    .sidebar {
+      background: linear-gradient(180deg, #eadeff, #d1b8ff, #b99cff);
+      border-radius: 24px;
+      padding: 24px;
+      width: 270px;
+      box-shadow: 0 12px 32px rgba(120, 69, 255, 0.12);
+      height: 100%;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+      font-size: 15px; color: rgba(15, 23, 42, 0.95); border-radius: 10px; cursor: pointer;
+      transition: 0.18s; white-space: nowrap;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.6); transform: translateX(4px); }
+    .nav-active { background: rgba(255,255,255,0.8); font-weight: 700; box-shadow: 0 6px 18px rgba(99,102,241,0.08); }
+    .card { background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 6px 26px rgba(13,14,18,0.04); }
+    .input-rounded { border-radius: 10px; }
+    .big-banner-preview { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; display:block; }
+    .flex-gap { gap: 12px; display:flex; align-items:center; }
+    .muted { color: #6b7280; font-size: 0.95rem; }
+    /* small responsiveness */
+    @media (max-width: 960px) {
+      .sidebar { width: 100%; height: auto; border-radius: 12px; }
+      .layout { flex-direction: column; gap: 18px; padding: 16px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="flex layout gap-8 max-w-7xl mx-auto p-6">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar flex flex-col gap-6">
+      <div class="flex items-center gap-3">
+        <img id="profile-pic"
+             src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png"
+             class="w-12 h-12 rounded-full object-cover border border-white/40" />
+        <div class="leading-tight w-full overflow-hidden">
+          <div id="profile-name" class="font-semibold truncate max-w-[170px] block">Admin</div>
+          <div id="profile-email" class="text-xs muted truncate max-w-[170px] block">—</div>
+        </div>
+      </div>
+
+      <nav class="flex flex-col gap-1 text-[15px]">
+        <div id="nav-banners" class="nav-item nav-active"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M3 6h18v12H3z" stroke="#4c1d95" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Banners</span></div>
+        <div id="nav-services" class="nav-item"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M6 20h12M12 4v16" stroke="#4c1d95" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Services</span></div>
+        <div id="nav-testimonials" class="nav-item"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4z" stroke="#b91c1c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Testimonials</span></div>
+        <div id="nav-announcements" class="nav-item"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 8l5 3-5 3V8zM4 15V9a1 1 0 011-1h5l5-3v12l-5-3H5a1 1 0 01-1-1z" stroke="#d946ef" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Announcements</span></div>
+      <div id="nav-icons" class="nav-item">
+  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+    <path d="M4 4h16v16H4z" stroke="#6d28d9" stroke-width="1.5"/>
+  </svg>
+  <span>Icons Library</span>
+</div>
+      </nav>
+
+      <div class="mt-2">
+        <button id="btn-signout" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-2 rounded-md font-semibold">Sign out</button>
+      </div>
+
+      <div class="text-xs muted mt-3">
+        Books Coffee and Dreams — Admin<br />
+        Signed in as <span id="signed-role">admin</span>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="flex-1 space-y-6">
+
+      <div class="card">
+        <div class="flex items-start justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">Manage Content | BCD</h1>
+            <p class="muted mt-1">Manage Banner, Service cards, Testimonial cards and Annoucements</p>
+          </div>
+          <div class="text-right muted small"></div>
+        </div>
+      </div>
+
+      <!-- BANNERS (big full-width previews as requested) -->
+      <section id="view-banners" class="card">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Banners</h2>
+            <p class="muted mt-1">Large preview cards shown on homepage. (Full-width preview when placed above services.)</p>
+          </div>
+          <div class="text-sm muted">
+            Cloudinary: <strong id="cloud-name-display">dkxuilgai</strong>
+          </div>
+        </div>
+
+        <div class="mt-4 grid gap-3">
+          <!-- Upload panel (ONLY file + upload + clear) -->
+<div class="grid sm:grid-cols-3 gap-3 items-center">
+  <input id="bannerFile" type="file" accept="image/*" class="p-2 border input-rounded" />
+</div>
+
+<div class="flex gap-2 mt-2">
+  <button id="uploadBannerBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-md font-semibold">Upload Banner</button>
+  <button id="clearBannerForm" class="bg-white border py-2 px-4 rounded-md">Clear</button>
+  <div id="bannerUploadStatus" class="muted ml-3"></div>
+</div>
+        </div>
+
+        <hr class="my-4" />
+
+        <div id="bannersList" class="space-y-4">
+          <!-- realtime banners appended here (sortable) -->
+        </div>
+      </section>
+
+      <!-- SERVICES -->
+      <section id="view-services" class="card hidden">
+        <h2 class="text-xl font-semibold mb-3">Services</h2>
+
+        <div class="grid md:grid-cols-3 gap-3 mb-4">
+          <input id="serviceTitle" placeholder="Service Title" class="p-2 border input-rounded" />
+          <input id="serviceIcon" placeholder="Icon (emoji or 1 char)" class="p-2 border input-rounded" />
+          <input id="serviceDesc" placeholder="Description" class="p-2 border input-rounded" />
+          <button id="addServiceBtn" class="col-span-3 bg-purple-600 text-white py-2 rounded-md font-semibold">Add Service</button>
+        </div>
+
+        <div id="serviceList" class="space-y-3"></div>
+      </section>
+
+      <!-- TESTIMONIALS -->
+      <section id="view-testimonials" class="card hidden">
+        <h2 class="text-xl font-semibold mb-3">Testimonials</h2>
+
+        <div class="grid md:grid-cols-3 gap-3 mb-4">
+          <input id="testName" placeholder="Name" class="p-2 border input-rounded" />
+          <input id="testCountry" placeholder="Country" class="p-2 border input-rounded" />
+          <input id="testMessage" placeholder="Message" class="p-2 border input-rounded" />
+          <button id="addTestimonialBtn" class="col-span-3 bg-fuchsia-600 text-white py-2 rounded-md font-semibold">Add Testimonial</button>
+        </div>
+
+        <div id="testimonialList" class="space-y-3"></div>
+      </section>
+
+      <!-- ANNOUNCEMENTS -->
+      <section id="view-announcements" class="card hidden">
+        <h2 class="text-xl font-semibold mb-3">Announcements</h2>
+
+        <form id="announceForm" class="mb-4">
+          <textarea id="announceMessage" rows="3" placeholder="Write announcement..." class="w-full p-2 border input-rounded"></textarea>
+          <div class="mt-3">
+            <button id="postAnnouncementBtn" class="bg-pink-600 text-white py-2 px-4 rounded-md font-semibold">Post Announcement</button>
+          </div>
+        </form>
+
+        <div id="announcementsList" class="space-y-3"></div>
+      </section>
+      <!-- ICONS LIBRARY -->
+<section id="view-icons" class="card hidden">
+  <h2 class="text-xl font-semibold mb-3">Subject & Chapter Icons Library</h2>
+
+  <h3 class="font-semibold mt-3">Upload Icon</h3>
+  <input id="iconFile" type="file" accept="image/*" class="p-2 border rounded-md mt-2" />
+
+  <div class="flex gap-2 mt-3">
+    <button id="uploadSubjectIcon" class="bg-purple-600 text-white py-2 px-4 rounded-md">Upload Subject Icon</button>
+    <button id="uploadChapterIcon" class="bg-indigo-600 text-white py-2 px-4 rounded-md">Upload Chapter Icon</button>
+  </div>
+
+  <hr class="my-5">
+
+  <h3 class="font-semibold">Subject Icons</h3>
+  <div id="subjectIconsList" class="grid grid-cols-4 gap-3 mt-2"></div>
+
+  <h3 class="font-semibold mt-6">Chapter Icons</h3>
+  <div id="chapterIconsList" class="grid grid-cols-4 gap-3 mt-2"></div>
+</section>
+    </main>
+  </div>
+
+  <!-- FIREBASE + APP SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, addDoc, getDocs, deleteDoc,
+      updateDoc, onSnapshot, query, orderBy, serverTimestamp, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // Firebase config (your existing config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
+
+    // UI refs
+    const profilePic = document.getElementById("profile-pic");
+    const profileName = document.getElementById("profile-name");
+    const profileEmail = document.getElementById("profile-email");
+    const signedRole = document.getElementById("signed-role");
+
+    const navBanners = document.getElementById("nav-banners");
+    const navServices = document.getElementById("nav-services");
+    const navTestimonials = document.getElementById("nav-testimonials");
+    const navAnnouncements = document.getElementById("nav-announcements");
+
+    const viewBanners = document.getElementById("view-banners");
+    const viewServices = document.getElementById("view-services");
+    const viewTestimonials = document.getElementById("view-testimonials");
+    const viewAnnouncements = document.getElementById("view-announcements");
+
+    const navIcons = document.getElementById("nav-icons");
+const viewIcons = document.getElementById("view-icons");
+
+    const bannersList = document.getElementById("bannersList");
+    const bannerFile = document.getElementById("bannerFile");
+    const bannerTitle = document.getElementById("bannerTitle");
+    const bannerLink = document.getElementById("bannerLink");
+    const uploadBannerBtn = document.getElementById("uploadBannerBtn");
+    const uploadStatus = document.getElementById("bannerUploadStatus");
+    const cloudNameInput = document.getElementById("cloudName");
+    const uploadPresetInput = document.getElementById("uploadPreset");
+    const cloudFolderInput = document.getElementById("cloudFolder");
+
+    // Services refs
+    const serviceList = document.getElementById("serviceList");
+    const addServiceBtn = document.getElementById("addServiceBtn");
+
+    // Testimonials refs
+    const testimonialList = document.getElementById("testimonialList");
+    const addTestimonialBtn = document.getElementById("addTestimonialBtn");
+
+    // Announcements refs
+    const announcementsList = document.getElementById("announcementsList");
+
+    // NAV helpers
+    function showView(name) {
+      [viewBanners, viewServices, viewTestimonials, viewAnnouncements, viewIcons]
+  .forEach(v => v.classList.add("hidden"));
+      if (name === "banners") viewBanners.classList.remove("hidden");
+      if (name === "services") viewServices.classList.remove("hidden");
+      if (name === "testimonials") viewTestimonials.classList.remove("hidden");
+      if (name === "announcements") viewAnnouncements.classList.remove("hidden");
+      if (name === "icons") viewIcons.classList.remove("hidden");
+
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("nav-active"));
+      document.getElementById("nav-" + name).classList.add("nav-active");
+    }
+    // default
+    showView("banners");
+
+    navBanners.onclick = () => showView("banners");
+    navServices.onclick = () => showView("services");
+    navTestimonials.onclick = () => showView("testimonials");
+    navAnnouncements.onclick = () => showView("announcements");
+
+navIcons.onclick = () => showView("icons");
+
+    // Profile & auth (fill profile, check role)
+    onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    profileName.textContent = "Not signed in";
+    profileEmail.textContent = "";
+    signedRole.textContent = "guest";
+    return;  // DO NOT redirect – guard.js handles auth
+  }
+
+  // Load user doc
+  let data = {};
+  try {
+    const udoc = await getDoc(doc(db, "users", user.uid));
+    if (udoc.exists()) data = udoc.data();
+  } catch (e) {
+    console.error("Failed to read user doc:", e);
+  }
+
+  // Update sidebar UI
+  const defaultPhoto =
+    "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
+
+  const finalPhoto = data.photoURL || data.profileURL || user.photoURL || defaultPhoto;
+
+  profilePic.src = finalPhoto;
+  profileName.textContent = data.name || user.displayName || "Admin";
+  profileEmail.textContent = data.email || user.email;
+  signedRole.textContent = data.role || "admin";
+});
+    // ===================== BANNERS realtime + CRUD + sortable =====================
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(() => {
+      const bannersQuery = query(collection(db, "banners"), orderBy("order"));
+      let bannersSortable = null;
+
+      onSnapshot(bannersQuery, snap => {
+        bannersList.innerHTML = "";
+        const frag = document.createDocumentFragment();
+
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const id = docSnap.id;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "p-3 bg-white rounded-lg shadow-sm";
+          wrapper.setAttribute("data-id", id);
+          wrapper.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+              <img src="${escapeHtml(d.imageUrl || '')}" class="big-banner-preview md:w-2/3" alt="${escapeHtml(d.title || '')}" onerror="this.style.opacity=0.6; this.style.filter='grayscale(40%)'"/>
+              <div class="flex-1 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-semibold text-lg">${escapeHtml(d.title || '—')}</div>
+                    <div class="muted text-sm">${escapeHtml(d.link || '')}</div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="edit-banner text-indigo-600 font-medium" data-id="${id}">Edit</button>
+                    <button class="del-banner text-red-600 font-medium" data-id="${id}">Delete</button>
+                  </div>
+                </div>
+                <div class="muted text-sm">Added: ${d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : String(d.createdAt)) : '—'}</div>
+                <div class="muted text-sm">Order: ${typeof d.order === 'number' ? d.order : '—'}</div>
+              </div>
+            </div>
+          `;
+
+          frag.appendChild(wrapper);
+        });
+
+        bannersList.appendChild(frag);
+
+        // attach handlers
+        bannersList.querySelectorAll('.del-banner').forEach(btn => {
+          btn.onclick = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            const res = await Swal.fire({
+              title: 'Delete banner?',
+              text: 'This will remove the banner permanently.',
+              icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444'
+            });
+            if (res.isConfirmed) {
+              await deleteDoc(doc(db, "banners", id));
+              Swal.fire('Deleted', '', 'success');
+            }
+          };
+        });
+
+        bannersList.querySelectorAll('.edit-banner').forEach(btn => {
+          btn.onclick = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            const docRef = doc(db, "banners", id);
+            const docSnap = await getDoc(docRef);
+            const data = docSnap.data();
+            const { value } = await Swal.fire({
+              title: 'Edit Banner',
+              html:
+                `<input id="swal-title" class="swal2-input" placeholder="Title" value="${escapeHtml(data.title||'')}">` +
+                `<input id="swal-link" class="swal2-input" placeholder="Link" value="${escapeHtml(data.link||'')}">` +
+                `<input id="swal-image" class="swal2-input" placeholder="Image URL" value="${escapeHtml(data.imageUrl||'')}">`,
+              preConfirm: () => ({
+                title: document.getElementById('swal-title').value,
+                link: document.getElementById('swal-link').value,
+                imageUrl: document.getElementById('swal-image').value
+              }),
+              width: 650
+            });
+            if (value) {
+              await updateDoc(docRef, { title: value.title, link: value.link, imageUrl: value.imageUrl });
+              Swal.fire('Saved', '', 'success');
+            }
+          };
+        });
+
+        // make sortable
+        if (window._bannersSortable) window._bannersSortable.destroy();
+        window._bannersSortable = new Sortable(bannersList, {
+          animation: 160,
+          handle: '.big-banner-preview',
+          onEnd: async () => {
+            const items = Array.from(bannersList.children);
+            for (let i = 0; i < items.length; i++) {
+              const id = items[i].getAttribute('data-id');
+              await updateDoc(doc(db, "banners", id), { order: i });
+            }
+            Swal.fire({ icon: 'success', title: 'Order saved', timer: 900, showConfirmButton: false });
+          }
+        });
+      });
+    });
+
+    // ===================== Services realtime + sortable =====================
+    onSnapshot(query(collection(db, "services"), orderBy("order")), snap => {
+      serviceList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const id = docSnap.id;
+        const el = document.createElement("div");
+        el.className = "p-3 bg-white rounded-md flex justify-between items-center cursor-move";
+        el.setAttribute("data-id", id);
+        el.innerHTML = `<div class="flex items-center gap-3"><div class="text-2xl">${escapeHtml(d.icon||'✨')}</div><div><div class="font-semibold">${escapeHtml(d.title||'—')}</div><div class="muted text-sm">${escapeHtml(d.description||'')}</div></div></div><div class="flex gap-2"><button class="edit-service text-indigo-600" data-id="${id}">Edit</button><button class="del-service text-red-600" data-id="${id}">Delete</button></div>`;
+        frag.appendChild(el);
+      });
+      serviceList.appendChild(frag);
+
+      // handlers
+      serviceList.querySelectorAll('.del-service').forEach(b => b.onclick = async (e) => {
+        const id = e.currentTarget.dataset.id;
+        await deleteDoc(doc(db, "services", id));
+      });
+      serviceList.querySelectorAll('.edit-service').forEach(b => b.onclick = async (e) => {
+        const id = e.currentTarget.dataset.id;
+        const docRef = doc(db, "services", id);
+        const snap = await getDoc(docRef);
+        const d = snap.data();
+        const { value } = await Swal.fire({
+          title: 'Edit Service',
+          html: `<input id="st" class="swal2-input" value="${escapeHtml(d.title||'')}"><input id="si" class="swal2-input" value="${escapeHtml(d.icon||'')}"><input id="sd" class="swal2-input" value="${escapeHtml(d.description||'')}">`,
+          preConfirm: () => ({ title: document.getElementById("st").value, icon: document.getElementById("si").value, description: document.getElementById("sd").value })
+        });
+        if (value) await updateDoc(docRef, value);
+      });
+
+      // sortable for services
+      if (window._servicesSortable) window._servicesSortable.destroy();
+      window._servicesSortable = new Sortable(serviceList, {
+        animation: 150,
+        onEnd: async () => {
+          const items = Array.from(serviceList.children);
+          for (let i = 0; i < items.length; i++) {
+            const id = items[i].getAttribute('data-id');
+            await updateDoc(doc(db, "services", id), { order: i });
+          }
+          Swal.fire({ icon: 'success', title: 'Order saved', timer: 700, showConfirmButton: false });
+        }
+      });
+    });
+
+    // ===================== Testimonials realtime =====================
+    onSnapshot(collection(db, "testimonials"), snap => {
+      testimonialList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const id = docSnap.id;
+        const el = document.createElement("div");
+        el.className = "p-3 bg-white rounded-md flex justify-between items-center";
+        el.innerHTML = `<div><div class="font-semibold">${escapeHtml(d.name||'—')}</div><div class="muted text-sm">${escapeHtml(d.country||'')}</div><div class="mt-2">${escapeHtml(d.message||'')}</div></div><div class="flex gap-2"><button class="edit-test text-indigo-600" data-id="${id}">Edit</button><button class="del-test text-red-600" data-id="${id}">Delete</button></div>`;
+        frag.appendChild(el);
+      });
+      testimonialList.appendChild(frag);
+
+      testimonialList.querySelectorAll('.del-test').forEach(b => b.onclick = async (e) => {
+        const id = e.currentTarget.dataset.id; await deleteDoc(doc(db, "testimonials", id));
+      });
+      testimonialList.querySelectorAll('.edit-test').forEach(b => b.onclick = async (e) => {
+        const id = e.currentTarget.dataset.id; const ref = doc(db, "testimonials", id); const s = await getDoc(ref); const d = s.data();
+        const { value } = await Swal.fire({ title: 'Edit Testimonial', html: `<input id="tn" class="swal2-input" value="${escapeHtml(d.name||'')}"><input id="tc" class="swal2-input" value="${escapeHtml(d.country||'')}"><textarea id="tm" class="swal2-textarea">${escapeHtml(d.message||'')}</textarea>`, preConfirm: () => ({ name: document.getElementById("tn").value, country: document.getElementById("tc").value, message: document.getElementById("tm").value })});
+        if (value) await updateDoc(ref, value);
+      });
+    });
+
+    // ===================== Announcements realtime =====================
+    onSnapshot(query(collection(db, "announcements"), orderBy("createdAt", "desc")), snap => {
+      announcementsList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const id = docSnap.id;
+        const el = document.createElement("div");
+        el.className = "p-3 bg-white rounded-md flex justify-between items-start";
+        el.innerHTML = `<div><div>${escapeHtml(d.message || '')}</div><div class="muted text-xs mt-2">${d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : String(d.createdAt)) : ''}</div></div><div><button class="del-ann text-red-600" data-id="${id}">Delete</button></div>`;
+        frag.appendChild(el);
+      });
+      announcementsList.appendChild(frag);
+
+      announcementsList.querySelectorAll('.del-ann').forEach(b => b.onclick = async (e) => {
+        const id = e.currentTarget.dataset.id; await deleteDoc(doc(db, "announcements", id));
+      });
+    });
+
+    // SUBJECT ICONS
+onSnapshot(collection(db, "subject_icons"), snap => {
+  subjectIconsList.innerHTML = "";
+  snap.forEach(doc => {
+    subjectIconsList.innerHTML += `
+      <img src="${doc.data().url}" class="w-20 h-20 rounded-md object-cover border" />
+    `;
+  });
+});
+
+// CHAPTER ICONS
+onSnapshot(collection(db, "chapter_icons"), snap => {
+  chapterIconsList.innerHTML = "";
+  snap.forEach(doc => {
+    chapterIconsList.innerHTML += `
+      <img src="${doc.data().url}" class="w-20 h-20 rounded-md object-cover border" />
+    `;
+  });
+});
+
+    // ===================== Add handlers =====================
+    // Utility escapeHtml
+    function escapeHtml(str='') {
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]);
+    }
+// Upload to Cloudinary with fixed preset & folder
+async function uploadToCloudinary(file) {
+  const cloudName = "dkxuilgai";          // your cloud name
+  const preset = "bcd_courses";           // your unsigned preset
+  const folder = "bcd_courses";           // folder where images will be stored
+
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", preset);
+  fd.append("folder", folder);
+
+  uploadStatus.textContent = "Uploading...";
+
+  const res = await fetch(url, { method: "POST", body: fd });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error("Cloudinary upload failed: " + txt);
+  }
+
+  const json = await res.json();
+  uploadStatus.textContent = "Uploaded";
+
+  return json.secure_url || json.url;
+}
+    uploadBannerBtn.onclick = async () => {
+  try {
+    const file = bannerFile.files[0];
+    if (!file) return Swal.fire('No file', 'Please choose an image file to upload.', 'warning');
+
+    uploadBannerBtn.disabled = true;
+
+    // Upload new image to Cloudinary
+    const imageUrl = await uploadToCloudinary(file);
+
+    // DELETE existing banner (allow only ONE)
+    const snap = await getDocs(collection(db, "banners"));
+    snap.forEach(async (docSnap) => {
+      await deleteDoc(doc(db, "banners", docSnap.id));
+    });
+
+    // ADD new banner
+    await addDoc(collection(db, "banners"), {
+      imageUrl,
+      createdAt: serverTimestamp(),
+      order: 0
+    });
+
+    bannerFile.value = '';
+    uploadStatus.textContent = '';
+    confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+
+    Swal.fire({ icon: 'success', title: 'Banner updated', timer: 900, showConfirmButton: false });
+
+  } catch (err) {
+    console.error(err);
+    Swal.fire('Upload error', err.message || String(err), 'error');
+  } finally {
+    uploadBannerBtn.disabled = false;
+  }
+};
+
+    uploadSubjectIcon.onclick = async () => {
+  const file = iconFile.files[0];
+  if (!file) return Swal.fire("Select a file first", "", "warning");
+
+  const url = await uploadToCloudinary(file);
+
+  await addDoc(collection(db, "subject_icons"), {
+    url,
+    createdAt: serverTimestamp()
+  });
+
+  iconFile.value = "";
+  Swal.fire("Subject Icon Uploaded!", "", "success");
+};
+
+uploadChapterIcon.onclick = async () => {
+  const file = iconFile.files[0];
+  if (!file) return Swal.fire("Select a file first", "", "warning");
+
+  const url = await uploadToCloudinary(file);
+
+  await addDoc(collection(db, "chapter_icons"), {
+    url,
+    createdAt: serverTimestamp()
+  });
+
+  iconFile.value = "";
+  Swal.fire("Chapter Icon Uploaded!", "", "success");
+};
+
+    document.getElementById("clearBannerForm").onclick = () => {
+      bannerTitle.value = '';
+      bannerLink.value = '';
+      bannerFile.value = '';
+      uploadStatus.textContent = '';
+    };
+
+    // Services add
+    addServiceBtn.onclick = async () => {
+      const title = document.getElementById("serviceTitle").value.trim();
+      const icon = document.getElementById("serviceIcon").value.trim();
+      const desc = document.getElementById("serviceDesc").value.trim();
+      if (!title || !desc) return Swal.fire("Missing", "Please fill title and description.", "warning");
+      const count = (await getDocs(collection(db, "services"))).size;
+      await addDoc(collection(db, "services"), { title, icon, description: desc, order: count, createdAt: serverTimestamp() });
+      document.getElementById("serviceTitle").value = '';
+      document.getElementById("serviceIcon").value = '';
+      document.getElementById("serviceDesc").value = '';
+      confetti();
+    };
+
+    // Testimonials add
+    addTestimonialBtn.onclick = async () => {
+      const name = document.getElementById("testName").value.trim();
+      const country = document.getElementById("testCountry").value.trim();
+      const message = document.getElementById("testMessage").value.trim();
+      if (!name || !message) return Swal.fire("Missing", "Please fill name and message.", "warning");
+      await addDoc(collection(db, "testimonials"), { name, country, message, createdAt: serverTimestamp() });
+      document.getElementById("testName").value = '';
+      document.getElementById("testCountry").value = '';
+      document.getElementById("testMessage").value = '';
+      confetti();
+    };
+
+    // Announce
+    document.getElementById("announceForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("announceMessage").value.trim();
+      if (!msg) return Swal.fire('Missing', 'Announcement cannot be empty', 'warning');
+      await addDoc(collection(db, "announcements"), { message: msg, createdAt: serverTimestamp() });
+      document.getElementById("announceMessage").value = '';
+      confetti();
+    };
+
+    // Sign out
+    document.getElementById("btn-signout").onclick = async () => {
+      try { await signOut(auth); location.reload(); } catch (err) { console.error(err); Swal.fire('Error', err.message, 'error'); }
+    };
+  </script>
+  <script type="module">
+  import { requirePermission } from "/admin/guard-v10.js";
+
+  await requirePermission("manageContent"); // FULL ACCESS TO THIS PAGE
+
+  // Page is allowed → nothing else needed
+</script>
+</body>
+</html>

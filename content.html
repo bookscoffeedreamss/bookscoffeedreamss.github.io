@@ -1,0 +1,309 @@
+<!-- Books Coffee and Dreams — Content (Upgraded: Premium white video cards, matching homepage UI) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Books Coffee and Dreams — Content</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+
+  <!-- Swiper (kept available for parity) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Particles -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <link href="/logo.png" rel="icon">
+  <link href="/logo.png" rel="apple-touch-icon">
+
+  <style>
+    :root { --glass-border: rgba(168,85,247,0.12); }
+    body { font-family: 'Outfit', sans-serif; background: linear-gradient(to bottom right, #f3e8ff, #ede9fe); background-size: 200% 200%; animation: bgLuxury 25s ease infinite; }
+    @keyframes bgLuxury { 0%,100%{background-position:top left}50%{background-position:bottom right} }
+
+    #tsparticles { position: fixed; inset: 0; z-index: -1; }
+
+    .purple-gradient { background: linear-gradient(to right, #a855f7, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    header { transition: all 0.25s ease; }
+    header.scrolled { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; backdrop-filter: blur(30px); background-color: rgba(255,255,255,0.86); box-shadow: 0 4px 20px rgba(168,85,247,0.12); }
+
+    .animate-fade-in-down { animation: fadeInDown 1s ease-out both; }
+    @keyframes fadeInDown { 0%{opacity:0;transform:translateY(-18px)}100%{opacity:1;transform:translateY(0)} }
+
+    .nav-link { position: relative; opacity: 0; animation: fadeInUp 0.6s ease forwards; }
+    @keyframes fadeInUp { 0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)} }
+    .nav-link::after { content: ""; position:absolute; left:0; bottom:-4px; width:100%; height:2px; background: linear-gradient(90deg,#a855f7,#ec4899); transform:scaleX(0); transform-origin:left; transition:transform .28s ease; box-shadow:0 0 8px rgba(236,72,153,0.45); }
+    .nav-link:hover::after { transform:scaleX(1); }
+
+    /* Premium white video card style (B) */
+    .video-card { background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(16,24,40,0.08); border: 1px solid rgba(15,23,42,0.04); transition: transform .22s ease, box-shadow .22s ease; }
+    .video-card:hover { transform: translateY(-6px); box-shadow: 0 22px 48px rgba(16,24,40,0.12); }
+    .video-meta { padding: 14px; }
+    .video-title { font-weight: 600; color: #0f172a; display: -webkit-box; -webkit-line-clamp:2; -webkit-box-orient: vertical; overflow:hidden; }
+    .video-thumb { display:block; width:100%; height:100%; object-fit:cover; }
+
+    /* Modal */
+    .modal { display:none; }
+    .modal.active { display:flex; }
+
+    /* Utilities kept from homepage to ensure parity */
+    .lux-card { background: rgba(255,255,255,0.25); border:1px solid rgba(255,255,255,0.4); backdrop-filter: blur(14px); }
+
+    /* responsive tweaks */
+    @media (max-width:640px){ .nav-link{ font-size:14px } }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-100 via-purple-200 to-purple-300 text-gray-800">
+  <div id="tsparticles"></div>
+
+  <!-- HEADER (same structure as homepage) -->
+  <header id="mainHeader" class="fixed top-0 w-full z-50 transition-all duration-300 bg-white/30 backdrop-blur-md border-b border-purple-200 shadow-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center animate-fade-in-down">
+      <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">Books Coffee Dreams</h1>
+
+      <nav class="flex gap-4 font-semibold text-purple-900">
+        <a href="index.html" class="nav-link" style="animation-delay:0.1s">Home</a>
+        <a href="content.html" class="nav-link " style="animation-delay:0.2s">Content</a>
+        <a href="courses.html" class="nav-link" style="animation-delay:0.3s">Courses</a>
+        <a href="blogs.html" class="nav-link" style="animation-delay:0.4s">Blogs</a>
+        <a href="community.html" class="nav-link" style="animation-delay:0.5s">Community</a>
+        <a href="staff-application.html" class="nav-link" style="animation-delay:0.6s">Apply</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <img id="headerPhoto" class="hidden w-10 h-10 rounded-full border-2 border-purple-500 shadow cursor-pointer" onclick="window.location.href='profile.html'" alt="profile">
+        <button id="loginBtn" onclick="window.location.href='login.html'" class="hidden bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white px-4 py-2 rounded-full">Login</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="pt-48 pb-28 text-center px-6" data-aos="fade-up">
+    <h2 class="text-5xl font-extrabold purple-gradient mb-4">📺 Explore Our YouTube Content</h2>
+    <p class="text-lg text-gray-700 max-w-2xl mx-auto mb-6">Dive into curated study videos, productivity tips, and cinematic talks — all wrapped in a premium layout.</p>
+
+    <div class="max-w-3xl mx-auto flex gap-3 items-center justify-center">
+      <input id="searchBar" type="text" placeholder="🔍 Search videos across all uploads..." class="w-full px-4 py-3 border-2 border-purple-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition" />
+    </div>
+  </section>
+
+  <!-- VIDEO GRID -->
+  <main class="max-w-7xl mx-auto px-6 pb-20">
+    <div id="videoGrid" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3" data-aos="fade-up"></div>
+    <p id="loadingText" class="text-center text-gray-500 mt-10">⏳ Loading videos...</p>
+    <div class="text-center"><button id="loadMoreBtn" class="mt-8 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow hover:bg-purple-700 transition" style="display:none">⬇️ Load More</button></div>
+  </main>
+
+  <!-- VIDEO MODAL -->
+  <div id="videoModal" class="modal fixed inset-0 bg-black/70 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-black rounded-xl overflow-hidden w-[92%] max-w-4xl relative">
+      <button id="closeModal" class="absolute top-2 right-2 text-white text-3xl font-bold">&times;</button>
+      <iframe id="videoFrame" class="w-full aspect-video" src="" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- FOOTER (same look) -->
+  <footer class="mt-10 text-center text-white bg-gradient-to-r from-purple-700 to-fuchsia-700 py-10 shadow-inner relative">
+    <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-fuchsia-500 opacity-20 blur-2xl animate-pulse-slow"></div>
+    <p class="relative z-10 font-semibold text-lg">Made with ❤️ by <span class="font-extrabold">Books Coffee and Dreams</span></p>
+    <p class="relative z-10 text-sm mt-2">© 2025 All rights reserved</p>
+  </footer>
+
+  <!-- FIREBASE AUTH (match homepage) -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+  authDomain: "bcd-discord.firebaseapp.com",
+  projectId: "bcd-discord",
+  storageBucket: "bcd-discord.firebasestorage.app",
+  messagingSenderId: "278895155371",
+  appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+  measurementId: "G-6Q46Z9ZF0D"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const headerPhoto = document.getElementById('headerPhoto');
+const loginBtn = document.getElementById('loginBtn');
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    headerPhoto.src = user.photoURL || '/default-avatar.png';
+    headerPhoto.classList.remove('hidden');
+    loginBtn.classList.add('hidden');
+  } else {
+    headerPhoto.classList.add('hidden');
+    loginBtn.classList.remove('hidden');
+  }
+});
+</script>
+
+<!-- YOUTUBE API SCRIPT (kept logic, improved rendering + card style B) -->
+  <script type="module">
+    const API_KEY = "AIzaSyBWCFpqDQp9Zoru4s8UgScW9lii_2dr6gU";
+    const UPLOADS_PLAYLIST_ID = "UUJZ83gzcryT0GJs6O8KrhGA";
+    const MAX_RESULTS = 50;
+
+    const videoGrid = document.getElementById('videoGrid');
+    const loadingText = document.getElementById('loadingText');
+    const videoModal = document.getElementById('videoModal');
+    const videoFrame = document.getElementById('videoFrame');
+    const closeModal = document.getElementById('closeModal');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const searchBar = document.getElementById('searchBar');
+
+    let allVideos = [];
+    let visibleVideos = [];
+    const INITIAL_BATCH = 9;
+    let currentIndex = 0;
+
+    async function fetchAllVideos() {
+      try {
+        let nextPageToken = '';
+        allVideos = [];
+        loadingText.style.display = 'block';
+        loadingText.textContent = '⏳ Loading videos...';
+
+        do {
+          const url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=' + MAX_RESULTS + '&playlistId=' + UPLOADS_PLAYLIST_ID + '&key=' + API_KEY + (nextPageToken ? '&pageToken=' + nextPageToken : '');
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (data.error) { loadingText.style.display = 'none'; videoGrid.innerHTML = '<p class="text-red-500">⚠️ API Error: ' + (data.error.message || 'Unknown') + '</p>'; return; }
+
+          if (data.items && data.items.length) allVideos = allVideos.concat(data.items);
+          nextPageToken = data.nextPageToken || '';
+        } while (nextPageToken);
+
+        loadingText.style.display = 'none';
+        currentIndex = 0; visibleVideos = [];
+        loadNextBatch();
+      } catch (err) {
+        console.error('Fetch failed:', err);
+        loadingText.textContent = '❌ Error loading videos.';
+      }
+    }
+
+    function createCard(item) {
+      const videoId = (item.snippet && item.snippet.resourceId) ? item.snippet.resourceId.videoId : '';
+      const title = (item.snippet && item.snippet.title) ? item.snippet.title : 'Untitled';
+      const thumb = (item.snippet && item.snippet.thumbnails && item.snippet.thumbnails.high) ? item.snippet.thumbnails.high.url : '';
+
+      const outer = document.createElement('div');
+      outer.className = 'video-card cursor-pointer';
+
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'w-full aspect-video overflow-hidden bg-gray-100';
+      const img = document.createElement('img');
+      img.className = 'video-thumb'; img.loading = 'lazy'; img.src = thumb; img.alt = title;
+      thumbWrap.appendChild(img);
+
+      const meta = document.createElement('div');
+      meta.className = 'video-meta';
+      const h3 = document.createElement('h3');
+      h3.className = 'video-title'; h3.textContent = title;
+      meta.appendChild(h3);
+
+      outer.appendChild(thumbWrap);
+      outer.appendChild(meta);
+
+      outer.addEventListener('click', () => {
+        videoModal.classList.add('active');
+        videoFrame.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0';
+      });
+
+      return outer;
+    }
+
+    function renderVideos(videos) {
+      videoGrid.innerHTML = '';
+      if (!videos || videos.length === 0) {
+        videoGrid.innerHTML = '<p class="text-center col-span-3 text-gray-500">No videos found.</p>';
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      videos.forEach(item => fragment.appendChild(createCard(item)));
+      videoGrid.appendChild(fragment);
+    }
+
+    function loadNextBatch() {
+      const batch = allVideos.slice(currentIndex, currentIndex + INITIAL_BATCH);
+      visibleVideos = visibleVideos.concat(batch);
+      renderVideos(visibleVideos);
+      currentIndex += INITIAL_BATCH;
+      loadMoreBtn.style.display = (currentIndex < allVideos.length) ? 'inline-block' : 'none';
+    }
+
+    searchBar.addEventListener('input', function () {
+  const q = searchBar.value.trim().toLowerCase();
+
+  if (q === '') {
+    // Reset to visible videos
+    visibleVideos = allVideos.slice(0, currentIndex);
+    renderVideos(visibleVideos);
+
+    // Show "Load More" again if needed
+    loadMoreBtn.style.display = (currentIndex < allVideos.length)
+      ? 'inline-block'
+      : 'none';
+
+    return;
+  }
+
+  // Filter videos
+  const filtered = allVideos.filter(v =>
+    v.snippet &&
+    v.snippet.title &&
+    v.snippet.title.toLowerCase().includes(q)
+  );
+
+  // Show filtered videos
+  renderVideos(filtered);
+
+  // Hide Load More button when searching
+  loadMoreBtn.style.display = 'none';
+});
+
+
+    loadMoreBtn.addEventListener('click', loadNextBatch);
+
+    closeModal.addEventListener('click', () => { videoModal.classList.remove('active'); videoFrame.src = ''; });
+    videoModal.addEventListener('click', (e) => { if (e.target === videoModal) { videoModal.classList.remove('active'); videoFrame.src = ''; } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && videoModal.classList.contains('active')) { videoModal.classList.remove('active'); videoFrame.src = ''; } });
+
+    // Start fetching
+    fetchAllVideos();
+  </script>
+
+  <!-- AOS + PARTICLES -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({ duration: 1000, once: true });</script>
+  <script>
+    tsParticles.load("tsparticles", {
+      fullScreen: { enable: false },
+      particles: { number: { value: 70 }, color: { value: "#a855f7" }, links: { enable: true, distance: 130, color: "#c084fc", opacity: 0.26 }, move: { enable: true, speed: 0.7 }, opacity: { value: 0.3 }, size: { value: 3 } },
+      interactivity: { events: { onHover: { enable: true, mode: "repulse" } }, modes: { repulse: { distance: 80 } } },
+      detectRetina: true
+    });
+
+    // Header scroll effect
+    window.addEventListener('scroll', () => { const header = document.getElementById('mainHeader'); header.classList.toggle('scrolled', window.scrollY > 50); });
+
+    // Small animation delay for nav-links to appear in sequence
+    document.querySelectorAll('.nav-link').forEach((el, i) => el.style.animationDelay = (0.05 * (i+1)) + 's');
+  </script>
+</body>
+</html>

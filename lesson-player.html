@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lesson Player • Books Coffee and Dreams</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root{--bg:#f6f8ff;--muted:#6b7280;--accent1:#6542F4;--accent2:#9A4DFF}
+    body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;background:var(--bg);margin:0;color:#0f172a}
+    .container{max-width:1200px;margin:20px auto;padding:18px}
+    .layout{display:grid;grid-template-columns:340px 1fr;gap:18px}
+    .sidebar{background:#fff;border-radius:12px;padding:14px;border:1px solid #eef2ff;max-height:80vh;overflow:auto}
+    .player{background:#fff;border-radius:12px;padding:14px;border:1px solid #eef2ff;min-height:60vh}
+    .lesson-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;cursor:pointer}
+    .lesson-item:hover{background:linear-gradient(90deg,#fbfdff,#f6f7ff)}
+    .lesson-item.active{background:linear-gradient(90deg,#eef2ff,#f7f9ff);border:1px solid #c7d2fe}
+    .btn{padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn-primary{background:linear-gradient(90deg,#6542F4,#9A4DFF);color:white}
+    .btn-outline{border:1px solid #c7d2fe;background:#fff}
+    .thumb{width:84px;height:52px;border-radius:6px;object-fit:cover}
+    .small{font-size:13px;color:var(--muted)}
+    @media (max-width:900px){ .layout{grid-template-columns:1fr;} .sidebar{max-height:220px;overflow:auto} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="layout">
+      <aside class="sidebar">
+        <div id="courseTitle" class="font-semibold text-lg">Course</div>
+        <div id="moduleTitle" class="small text-gray-600 mt-1">Module</div>
+        <div id="modulesList" class="mt-4 space-y-2"></div>
+      </aside>
+
+      <main class="player">
+        <div class="flex justify-between items-start">
+          <div>
+            <div id="lessonTitle" style="font-weight:700;font-size:20px">Lesson</div>
+            <div id="lessonDesc" class="small mt-1"></div>
+          </div>
+          <div class="text-right">
+            <div id="progressText" class="small">Progress 0/0</div>
+            <div id="statusNote" class="small mt-2"></div>
+          </div>
+        </div>
+
+        <div id="videoWrap" style="margin-top:14px;background:#000;border-radius:10px;overflow:hidden">
+          <video id="videoPlayer" controls style="width:100%;height:auto;background:#000"></video>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
+          <button id="markBtn" class="btn btn-primary">Mark as completed</button>
+          <button id="notesBtn" class="btn btn-outline">Download Notes (PDF)</button>
+          <button id="backBtn" class="btn btn-outline">Back to course</button>
+        </div>
+
+        <div id="meta" class="small muted mt-4"></div>
+      </main>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // config
+  const firebaseConfig = {
+    apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+    authDomain: "bcd-discord.firebaseapp.com",
+    projectId: "bcd-discord",
+    storageBucket: "bcd-discord.appspot.com",
+    messagingSenderId: "278895155371",
+    appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // UI refs
+  const modulesList = document.getElementById('modulesList');
+  const courseTitle = document.getElementById('courseTitle');
+  const moduleTitle = document.getElementById('moduleTitle');
+  const lessonTitle = document.getElementById('lessonTitle');
+  const lessonDesc = document.getElementById('lessonDesc');
+  const videoPlayer = document.getElementById('videoPlayer');
+  const markBtn = document.getElementById('markBtn');
+  const notesBtn = document.getElementById('notesBtn');
+  const backBtn = document.getElementById('backBtn');
+  const progressText = document.getElementById('progressText');
+  const meta = document.getElementById('meta');
+
+  // state
+  let courseId = null;
+  let modules = [];
+  let courseData = null;
+  let currentUser = null;
+  let mi = 0, li = 0;
+  let progressMap = {}; // 'mi:li' -> {lastTime, completed}
+  let autosaveInterval = null;
+
+  function getParam(n){ const s = new URLSearchParams(location.search); return s.get(n); }
+  courseId = getParam('courseId') || getParam('id') || null;
+  mi = Number(getParam('module')||0);
+  li = Number(getParam('lesson')||0);
+  if(!courseId){ Swal.fire('Missing','courseId required','error'); throw new Error('missing id'); }
+
+  onAuthStateChanged(auth, async user => {
+    currentUser = user;
+    await loadCourseAndProgress();
+    renderSidebar();
+    await loadLesson(mi,li);
+  });
+
+  async function loadCourseAndProgress(){
+    const snap = await getDoc(doc(db,'courses',courseId));
+    if(!snap.exists()){ Swal.fire('Not found','Course not found','error'); throw new Error('not found'); }
+    courseData = snap.data();
+    modules = courseData.modules || [];
+    courseTitle.textContent = courseData.title || 'Untitled';
+
+    progressMap = {};
+    if(currentUser){
+      try{
+        const q = query(collection(db,'userCourseProgress'), where('uid','==',currentUser.uid), where('courseId','==',courseId));
+        const snaps = await getDocs(q);
+        snaps.forEach(d => {
+          const dd = d.data();
+          progressMap[`${dd.moduleIndex}:${dd.lessonIndex}`] = { lastTime: dd.lastTime || 0, completed: !!dd.completed };
+        });
+      } catch(err){ console.error('progress load err', err); }
+    }
+  }
+
+  function renderSidebar(){
+    modulesList.innerHTML = '';
+    modules.forEach((m, idx) => {
+      const block = document.createElement('div');
+      block.innerHTML = `<div style="font-weight:700">${idx+1}. ${m.title || 'Untitled Module'}</div><div id="ml-${idx}" style="margin-top:8px"></div>`;
+      modulesList.appendChild(block);
+      const list = block.querySelector(`#ml-${idx}`);
+      (m.lessons||[]).forEach((l, j) => {
+        const key = `${idx}:${j}`;
+        const done = progressMap[key]?.completed;
+        const item = document.createElement('div');
+        item.className = 'lesson-item' + ((idx===mi && j===li)? ' active' : '');
+        item.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><img class="thumb" src="${l.thumbnail || 'https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png'}"><div style="min-width:0"><div style="font-weight:700">${j+1}. ${l.title||'Untitled'}</div><div class="small">${l.description||''}</div></div></div><div style="min-width:80px;text-align:right">${done? '<span style="color:#10b981;font-weight:800">Done</span>' : ''}</div>`;
+        item.onclick = () => navigateTo(idx,j);
+        list.appendChild(item);
+      });
+    });
+  }
+
+  function navigateTo(mIdx, lIdx){
+    mi = mIdx; li = lIdx;
+    history.replaceState({}, '', `${location.pathname}?courseId=${encodeURIComponent(courseId)}&module=${mi}&lesson=${li}`);
+    loadLesson(mi,li);
+    // highlight active item
+    document.querySelectorAll('.lesson-item').forEach((el, i) => el.classList.toggle('active', false));
+    // quick highlight: simpler to just rerender
+    renderSidebar();
+  }
+
+  function formatTime(s){ s = Number(s) || 0; const mm = Math.floor(s/60); const ss = Math.floor(s%60); return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
+
+  async function loadLesson(mIndex, lIndex){
+    const module = modules[mIndex];
+    const lesson = module?.lessons?.[lIndex];
+    if(!lesson){ Swal.fire('Lesson not found','Invalid lesson','error'); return; }
+
+    // HARD LOCK CHECK (server-side in rules should also block progress)
+    const priceNumber = Number(courseData?.price ?? 0);
+    const isPaidFlag = courseData?.isPaid === true || String(courseData?.isPaid).toLowerCase() === 'true';
+    const courseIsPaid = isPaidFlag || (Number.isFinite(priceNumber) && priceNumber > 0);
+    let userHasAccess = false;
+    if(!courseIsPaid) userHasAccess = true;
+    else if(currentUser){
+      try{
+        const q = query(collection(db,'purchases'), where('courseId','==',courseId), where('uid','==',currentUser.uid));
+        const snaps = await getDocs(q);
+        if(!snaps.empty) userHasAccess = true;
+      } catch(err){ console.error('purchase check err', err); userHasAccess = false; }
+    }
+
+    if(courseIsPaid && !userHasAccess){
+      await Swal.fire({title:'Locked', text:'Purchase this course to unlock lessons.', icon:'warning'});
+      window.location.href = `course.html?id=${encodeURIComponent(courseId)}`;
+      return;
+    }
+
+    // UI populate
+    moduleTitle.textContent = `Module ${mIndex+1} • ${module.title||''}`;
+    lessonTitle.textContent = lesson.title || 'Untitled';
+    lessonDesc.textContent = lesson.description || '';
+
+    // load video if present
+    if(lesson.videoURL){
+      videoPlayer.src = lesson.videoURL;
+    } else {
+      videoPlayer.removeAttribute('src');
+    }
+
+    // notes
+    notesBtn.onclick = () => {
+      if(!lesson.notesURL){ Swal.fire('No notes','No PDF attached to this lesson','info'); return; }
+      if(courseIsPaid && !userHasAccess){ Swal.fire('Locked','Purchase to unlock notes','warning'); return; }
+      const url = lesson.notesURL.split('?')[0];
+      window.open(`pdf-viewer.html?url=${encodeURIComponent(url)}`, '_blank');
+    };
+
+    // progress counts
+    const totals = modules.reduce((acc,m)=> acc + (m.lessons? m.lessons.length:0), 0);
+    const completedCount = Object.values(progressMap).reduce((acc,v)=> acc + (v.completed?1:0), 0);
+    progressText.textContent = `Progress ${completedCount}/${totals}`;
+
+    // mark completed UI
+    const key = `${mIndex}:${lIndex}`;
+    if(progressMap[key]?.completed){ markBtn.textContent='Completed ✓'; markBtn.disabled=true; markBtn.style.opacity=0.7; } else { markBtn.textContent='Mark as completed'; markBtn.disabled=false; markBtn.style.opacity=1; }
+    markBtn.onclick = async () => {
+      await saveProgress(mIndex,lIndex, Math.floor(videoPlayer.currentTime||0), true);
+      markBtn.textContent='Completed ✓'; markBtn.disabled=true;
+      await loadCourseAndProgress();
+      renderSidebar();
+    };
+
+    // resume prompt
+    const prev = progressMap[key];
+    if(prev && prev.lastTime && prev.lastTime > 5){
+      const res = await Swal.fire({ title:'Resume video?', text:`Resume from ${formatTime(prev.lastTime)}?`, showCancelButton:true, confirmButtonText:'Resume', cancelButtonText:'Start from beginning' });
+      if(res.isConfirmed) videoPlayer.currentTime = Math.max(0, Number(prev.lastTime)-1);
+    }
+
+    // autosave interval (every 5s)
+    if(autosaveInterval) clearInterval(autosaveInterval);
+    autosaveInterval = setInterval(()=> {
+      if(currentUser && lesson.videoURL){
+        saveProgress(mIndex,lIndex, Math.floor(videoPlayer.currentTime||0), progressMap[key]?.completed || false).catch(e=>console.error('autosave err', e));
+      }
+    }, 5000);
+
+    meta.textContent = `Module ${mIndex+1} • Lesson ${lIndex+1} ${lesson.duration ? ' • ' + lesson.duration : ''}`;
+  }
+
+  async function saveProgress(mIndex, lIndex, lastTime=0, completed=false){
+    if(!currentUser) return;
+    const docId = `${currentUser.uid}_${courseId}_${mIndex}_${lIndex}`;
+    const ref = doc(db,'userCourseProgress',docId);
+    const payload = { uid: currentUser.uid, courseId, moduleIndex: mIndex, lessonIndex: lIndex, lastTime: Number(lastTime||0), completed: !!completed, updatedAt: serverTimestamp() };
+    try{
+      await setDoc(ref, payload, { merge: true });
+      progressMap[`${mIndex}:${lIndex}`] = { lastTime: payload.lastTime, completed: payload.completed };
+    }catch(err){ console.error('saveProgress err', err); }
+  }
+
+  window.addEventListener('beforeunload', ()=> {
+    try {
+      if(currentUser && videoPlayer){
+        saveProgress(mi, li, Math.floor(videoPlayer.currentTime||0), progressMap[`${mi}:${li}`]?.completed || false);
+      }
+    }catch(e){}
+  });
+
+  backBtn.onclick = () => window.location.href = `course.html?id=${encodeURIComponent(courseId)}`;
+
+</script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Roles Manager | Books Coffee and Dreams</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{ --card-bg:#0b1220; --muted:#6b7280; }
+    body{ font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial; background:linear-gradient(180deg,#faf8ff 0%,#f5f7ff 100%); padding:28px; color:#0f172a; }
+    .card{ background:#fff;border-radius:12px;padding:14px;box-shadow:0 10px 28px rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.04); }
+    .role-card{ display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px;border-radius:10px; transition: box-shadow .18s, transform .12s; background: linear-gradient(180deg,#fff,#fbfcff); border:1px solid rgba(15,23,42,0.03);}
+    .role-card.dragging { opacity:.6; transform:scale(.995); box-shadow:0 20px 60px rgba(2,6,23,0.08); }
+    .role-left{ display:flex; gap:12px; align-items:center; min-width:0; flex:1; }
+    .role-info{ overflow:hidden; min-width:0; }
+    .role-title{ font-weight:700; font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; gap:8px; align-items:center; }
+    .role-meta{ color:var(--muted); font-size:.88rem; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .avatar{ width:56px; height:56px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; flex:0 0 56px; position:relative; box-shadow:0 6px 22px rgba(2,6,23,0.06); border:4px solid rgba(255,255,255,0.9); }
+    .avatar img{ width:100%; height:100%; object-fit:cover; border-radius:999px; display:block; }
+    .role-badge{ padding:6px 10px; border-radius:999px; font-size:.85rem; font-weight:600; display:inline-flex; align-items:center; gap:8px; }
+    .badge-users{ background:rgba(0,0,0,0.06); color:#111827; border-radius:999px; padding:6px 8px; font-weight:700; font-size:.8rem; }
+    .actions{ display:flex; gap:8px; align-items:center; }
+    .icon-btn{ padding:8px 10px; border-radius:8px; background:rgba(15,23,42,0.03); border:1px solid rgba(15,23,42,0.04); cursor:pointer; }
+    .holo-text{ background: conic-gradient(from 0deg,#ffd36b,#ff8bf2,#8da0ff,#7bf2d4,#ffd36b); background-size:300% 300%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:holoFlow 6.5s linear infinite; font-weight:800; }
+    @keyframes holoFlow{ 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+    .modal-backdrop{ position:fixed; inset:0; background:rgba(2,6,23,0.45); display:flex; align-items:center; justify-content:center; z-index:60; }
+    .modal{ background:white; border-radius:10px; padding:18px; max-width:520px; width:92%; box-shadow:0 30px 80px rgba(2,6,23,0.6); }
+    .placeholder{ border:2px dashed rgba(99,102,241,0.18); border-radius:8px; min-height:72px; display:flex; align-items:center; justify-content:center; color:rgba(99,102,241,0.8); }
+    .muted{ color:var(--muted); font-size:.9rem; }
+    .gradient-text{ background: linear-gradient(90deg, var(--g1,#FF66CC), var(--g2,#FF99CC), var(--g3,#FF66CC)); background-size:300% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation: sheenPan 4.6s cubic-bezier(.22,.9,.32,.99) infinite; }
+    @keyframes sheenPan{ 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+  </style>
+</head>
+<body>
+  <div class="max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-bold">Roles Manager</h1>
+        <div class="muted mt-1">Manage roles, reorder, duplicate or delete.</div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <input id="searchInput" type="text" placeholder="Search roles..." class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <button id="createBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow disabled:opacity-40" disabled>+ Create Role</button>
+      </div>
+    </div>
+
+    <div id="status" class="mb-4 text-sm text-gray-600">Checking permissions…</div>
+
+    <div id="rolesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <!-- Delete modal -->
+  <div id="deleteModal" class="hidden">
+    <div class="modal-backdrop">
+      <div class="modal card">
+        <h3 class="text-xl font-bold mb-2">Delete role?</h3>
+        <p class="muted mb-4">Deleting a role will remove it. Users who had this role will no longer have it. This action cannot be undone.</p>
+        <div class="flex gap-3 justify-end">
+          <button id="cancelDelete" class="px-4 py-2 rounded border">Cancel</button>
+          <button id="confirmDelete" class="px-4 py-2 bg-red-500 text-white rounded">Delete role</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase modular + app logic -->
+  <script type="module">
+    // ---------- Firebase modular imports ----------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, doc, query, orderBy, onSnapshot, getDocs,
+      addDoc, deleteDoc, updateDoc, writeBatch, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // Import guard (must exist on your server)
+    import { requirePermission } from "/admin/guard-v10.js";
+
+    // ---------- config ----------
+    const ORG_ID = "bcd";
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    // ---------- initialize ----------
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // ---------- state ----------
+    let rolesUnsub = null;
+    let usersUnsub = null;
+    let allRoles = []; // array of QueryDocumentSnapshot
+    let userCountMap = {}; // roleId -> count
+    let dragSrcId = null;
+    let cardOrder = []; // current order array of ids
+    let roleToDelete = null;
+
+    // ---------- helpers ----------
+    const $ = id => document.getElementById(id);
+    function setStatus(msg, err = false){
+      const s = $("status");
+      s.textContent = msg;
+      s.className = err ? "mb-4 text-sm text-red-600" : "mb-4 text-sm text-gray-600";
+    }
+    function sanitizeColor(color){
+      if (!color) return "#6366f1";
+      const m = color.trim().match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+      return m ? color : "#6366f1";
+    }
+
+    // ---------- USERS LISTENER (user counts) ----------
+    function startUsersListener(){
+      if (usersUnsub) usersUnsub(); // unsubscribe old
+      try {
+        const usersCol = collection(db, "users");
+        usersUnsub = onSnapshot(usersCol, snap => {
+          const map = {};
+          snap.forEach(docSnap => {
+            const u = docSnap.data();
+            const rid = u.roleId || null;
+            if (!rid) return;
+            map[rid] = (map[rid] || 0) + 1;
+          });
+          userCountMap = map;
+          renderRoles(allRoles);
+        }, err => {
+          console.error("users snapshot error", err);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    // ---------- create role card ----------
+    function createRoleCard(docSnap){
+      const r = docSnap.data() || {};
+      const id = docSnap.id;
+      const title = r.name || "Unnamed Role";
+      const color = sanitizeColor(r.color);
+      const style = r.style || "solid";
+      const usersCount = userCountMap[id] || 0;
+
+      // wrapper
+      const wrapper = document.createElement("div");
+      wrapper.className = "role-card card";
+      wrapper.setAttribute("draggable", "true");
+      wrapper.dataset.roleId = id;
+
+      // left
+      const left = document.createElement("div"); left.className = "role-left";
+      const info = document.createElement("div"); info.className = "role-info";
+
+      const avatar = document.createElement("div"); avatar.className = "avatar";
+      avatar.style.background = color;
+      if (r.iconUrl){
+        const img = document.createElement("img");
+        img.src = r.iconUrl;
+        img.alt = title;
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = (title || "R").slice(0,1).toUpperCase();
+        if (style === "holo"){
+          avatar.style.boxShadow = "0 10px 40px rgba(141,160,255,0.14), inset 0 0 28px rgba(255,255,255,0.06)";
+          avatar.style.border = "3px solid rgba(255,255,255,0.9)";
+        }
+      }
+
+      const titleEl = document.createElement("div"); titleEl.className = "role-title";
+      const titleText = document.createElement("span");
+      titleText.textContent = title;
+      if (style === "holo") titleText.classList.add("holo-text");
+      if (style === "gradient") titleText.classList.add("gradient-text");
+      titleEl.appendChild(titleText);
+
+      const meta = document.createElement("div"); meta.className = "role-meta";
+      meta.textContent = `${usersCount} user${usersCount===1? "": "s"} • ${Object.keys(r.permissions||{}).filter(k=>r.permissions[k]).length} perms`;
+
+      info.appendChild(titleEl);
+      info.appendChild(meta);
+
+      left.appendChild(avatar);
+      left.appendChild(info);
+
+      // right actions
+      const right = document.createElement("div"); right.className = "actions";
+
+      const usersBadge = document.createElement("div");
+      usersBadge.className = "badge-users"; usersBadge.textContent = usersCount; usersBadge.title = "Number of users with this role";
+
+      const dupBtn = document.createElement("button");
+      dupBtn.className = "icon-btn"; dupBtn.title = "Duplicate role"; dupBtn.innerText = "Duplicate";
+      dupBtn.onclick = async (e) => {
+        e.stopPropagation();
+        try {
+          const rolesCol = collection(db, "organizations", ORG_ID, "roles");
+          const newRef = await addDoc(rolesCol, {
+            ...r,
+            createdAt: serverTimestamp(),
+            updatedAt: null,
+            order: Date.now()
+          });
+          // redirect to editor
+          window.location.href = `/admin/roles/admin-roles-editor.html?roleId=${encodeURIComponent(newRef.id)}`;
+        } catch (err) {
+          console.error("duplicate failed", err);
+          alert("Duplicate failed: " + (err.message||err));
+        }
+      };
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "icon-btn"; editBtn.title = "Edit role"; editBtn.innerText = "Edit";
+      editBtn.onclick = (e) => { e.stopPropagation(); window.location.href = `/admin/roles/admin-roles-editor.html?roleId=${encodeURIComponent(id)}`; };
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "icon-btn"; delBtn.title = "Delete role"; delBtn.innerText = "Delete";
+      delBtn.onclick = (e) => { e.stopPropagation(); openDeleteModal(id, title); };
+
+      const dragHint = document.createElement("div");
+      dragHint.className = "muted"; dragHint.style.fontSize = "0.88rem"; dragHint.textContent = "Drag";
+
+      right.appendChild(usersBadge);
+      right.appendChild(dupBtn);
+      right.appendChild(editBtn);
+      right.appendChild(delBtn);
+      right.appendChild(dragHint);
+
+      wrapper.appendChild(left);
+      wrapper.appendChild(right);
+
+      // click navigates
+      wrapper.addEventListener("click", () => window.location.href = `/admin/roles/admin-roles-editor.html?roleId=${encodeURIComponent(id)}`);
+
+      // drag events
+      wrapper.addEventListener("dragstart", (ev) => {
+        dragSrcId = id;
+        ev.dataTransfer.effectAllowed = "move";
+        try { ev.dataTransfer.setData("text/plain", id); } catch(e){}
+        wrapper.classList.add("dragging");
+      });
+      wrapper.addEventListener("dragend", () => {
+        dragSrcId = null;
+        wrapper.classList.remove("dragging");
+        removePlaceholders();
+      });
+      wrapper.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+        insertPlaceholder(ev.currentTarget);
+      });
+      wrapper.addEventListener("drop", async (ev) => {
+        ev.preventDefault();
+        const targetId = ev.currentTarget.dataset.roleId;
+        const srcId = (ev.dataTransfer && ev.dataTransfer.getData && ev.dataTransfer.getData("text/plain")) || dragSrcId;
+        if (!srcId || srcId === targetId) return;
+        reorderLocal(srcId, targetId);
+        await persistOrder();
+      });
+
+      return wrapper;
+    }
+
+    // ---------- render ----------
+    function renderRoles(docs){
+      const container = $("rolesContainer");
+      container.innerHTML = "";
+      if (!docs || !docs.length){
+        container.innerHTML = '<div class="card">No roles found.</div>';
+        return;
+      }
+      // keep cardOrder stable (ids)
+      cardOrder = docs.map(d => d.id);
+      docs.forEach(docSnap => {
+        container.appendChild(createRoleCard(docSnap));
+      });
+    }
+
+    // ---------- placeholder helpers ----------
+    function insertPlaceholder(target){
+      removePlaceholders();
+      const rect = target.getBoundingClientRect();
+      const mid = rect.top + rect.height/2;
+      const container = $("rolesContainer");
+      const placeholder = document.createElement("div");
+      placeholder.className = "placeholder";
+      placeholder.textContent = "Drop here to reorder";
+      placeholder.dataset.placeholder = "true";
+      const clientY = (window.event && window.event.clientY) || (target && (target._lastEventY)) || 0;
+      // fallback to using mouse Y from window.event (not ideal but works)
+      if (window.event && window.event.clientY < mid) {
+        container.insertBefore(placeholder, target);
+      } else {
+        if (target.nextSibling) container.insertBefore(placeholder, target.nextSibling);
+        else container.appendChild(placeholder);
+      }
+    }
+    function removePlaceholders(){ document.querySelectorAll('[data-placeholder="true"]').forEach(n=>n.remove()); }
+
+    // ---------- reorder logic ----------
+    function reorderLocal(srcId, targetId){
+      const srcIdx = cardOrder.indexOf(srcId);
+      const tgtIdx = cardOrder.indexOf(targetId);
+      if (srcIdx === -1 || tgtIdx === -1) return;
+      cardOrder.splice(srcIdx, 1);
+      const insertAt = cardOrder.indexOf(targetId);
+      cardOrder.splice(insertAt, 0, srcId);
+      // map to docs
+      const docsById = Object.fromEntries(allRoles.map(d => [d.id, d]));
+      const orderedDocs = cardOrder.map(id => docsById[id]).filter(Boolean);
+      renderRoles(orderedDocs);
+    }
+
+    async function persistOrder(){
+      try {
+        const batch = writeBatch(db);
+        cardOrder.forEach((id, idx) => {
+          const ref = doc(db, "organizations", ORG_ID, "roles", id);
+          batch.update(ref, { order: idx });
+        });
+        await batch.commit();
+        setStatus("Order saved.");
+      } catch (err) {
+        console.error("persist order failed", err);
+        setStatus("Failed to save order.", true);
+      }
+    }
+
+    // ---------- delete modal ----------
+    function openDeleteModal(id, title){
+      roleToDelete = id;
+      const modalRoot = $("deleteModal");
+      modalRoot.classList.remove("hidden");
+      modalRoot.querySelector(".modal h3").textContent = `Delete role "${title}"?`;
+    }
+    function closeDeleteModal(){ roleToDelete = null; $("deleteModal").classList.add("hidden"); }
+
+    $("confirmDelete").addEventListener("click", async () => {
+      if (!roleToDelete) return;
+      try {
+        // Clear roleId from users (optional)
+        const usersSnap = await getDocs(query(collection(db, "users")));
+        const batch = writeBatch(db);
+        usersSnap.forEach(uDoc => {
+          const u = uDoc.data();
+          if (u.roleId === roleToDelete) batch.update(doc(db, "users", uDoc.id), { roleId: null });
+        });
+        // delete role doc
+        batch.delete(doc(db, "organizations", ORG_ID, "roles", roleToDelete));
+        await batch.commit();
+        closeDeleteModal();
+        setStatus("Role deleted.");
+      } catch (err) {
+        console.error("delete failed", err);
+        setStatus("Failed to delete role.", true);
+      }
+    });
+    $("cancelDelete").addEventListener("click", () => closeDeleteModal());
+
+    // ---------- role listener ----------
+    function startRoleListener(){
+      if (rolesUnsub) rolesUnsub();
+      try {
+        const rolesCol = collection(db, "organizations", ORG_ID, "roles");
+        const q = query(rolesCol, orderBy("order"));
+        rolesUnsub = onSnapshot(q, snap => {
+          if (snap.empty){ allRoles = []; renderRoles([]); return; }
+          let docs = snap.docs.slice();
+
+          // check if any missing order -> stable fallback
+          const needFix = docs.some(d => d.data().order === undefined || d.data().order === null);
+          if (needFix) {
+            docs = docs.sort((a,b) => {
+              const oa = a.data().order, ob = b.data().order;
+              if (oa !== undefined && ob !== undefined) return oa - ob;
+              const ta = a.data().createdAt ? (a.data().createdAt.toMillis ? a.data().createdAt.toMillis() : 0) : 0;
+              const tb = b.data().createdAt ? (b.data().createdAt.toMillis ? b.data().createdAt.toMillis() : 0) : 0;
+              if (ta && tb) return ta - tb;
+              return (a.data().name || "").localeCompare(b.data().name || "");
+            });
+          } else {
+            docs = docs.sort((a,b) => (a.data().order || 0) - (b.data().order || 0));
+          }
+
+          allRoles = docs;
+          cardOrder = allRoles.map(d => d.id);
+          renderRoles(allRoles);
+        }, err => {
+          console.error("roles snapshot error", err);
+          setStatus("Error loading roles.", true);
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    // ---------- search ----------
+    $("searchInput").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return renderRoles(allRoles);
+      const filtered = allRoles.filter(d => (d.data().name || "").toLowerCase().includes(q));
+      renderRoles(filtered);
+    });
+
+    // ---------- create role ----------
+    $("createBtn").addEventListener("click", async () => {
+      const btn = $("createBtn");
+      btn.disabled = true; btn.textContent = "Creating…";
+      try {
+        const rolesCol = collection(db, "organizations", ORG_ID, "roles");
+        const ref = await addDoc(rolesCol, {
+          name: "New Role",
+          style: "solid",
+          color: "#5865F2",
+          gradientId: "g1",
+          permissions: { admin:false, manageUsers:false, manageRoles:false, manageCourses:false, manageSubjects:false, manageContent:false, manageDoubts:false, manageExams:false },
+          links: {},
+          createdAt: serverTimestamp(),
+          order: Date.now()
+        });
+        window.location.href = `/admin/roles/admin-roles-editor.html?roleId=${encodeURIComponent(ref.id)}`;
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to create role.", true);
+        btn.disabled = false; btn.textContent = "+ Create Role";
+      }
+    });
+
+    // ---------- cleanup ----------
+    window.addEventListener("beforeunload", () => {
+      if (rolesUnsub) rolesUnsub();
+      if (usersUnsub) usersUnsub();
+    });
+
+    // ---------- permission check & boot (top-level await allowed in module) ----------
+    try {
+      const { user, role: userRole } = await requirePermission("manageRoles");
+      // permission ok — start listeners
+      startUsersListener();
+      startRoleListener();
+      $("createBtn").disabled = false;
+      setStatus("Permission verified. Loading roles…");
+    } catch (err) {
+      console.error("permission error", err);
+      setStatus("You don't have permission to view this page.", true);
+      // leave create disabled
+    }
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blog Detail | Books Coffee and Dreams</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #faf5ff, #ede9fe);
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .tag {
+      background-color: #e9d5ff;
+      color: #6b21a8;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body class="overflow-x-hidden">
+
+  <header class="flex items-center justify-between px-6 py-4 shadow-md backdrop-blur bg-white/70 fixed w-full z-50">
+    <h1 class="text-2xl font-bold text-purple-600">Books ☕ Dreams</h1>
+  </header>
+
+  <main class="pt-28 px-6 md:px-16 max-w-3xl mx-auto">
+    <div id="blogContent" class="bg-white shadow-lg rounded-xl p-6 relative"></div>
+  </main>
+
+  <footer class="mt-20 px-6 py-8 text-center text-gray-600 bg-purple-50">
+    © 2025 Books Coffee and Dreams. All rights reserved.
+  </footer>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      databaseURL: "https://bcd-discord-default-rtdb.firebaseio.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.firebasestorage.app",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+      measurementId: "G-6Q46Z9ZF0D"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const blogContent = document.getElementById("blogContent");
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    async function loadBlog() {
+      const blogId = getQueryParam("id");
+      if (!blogId) return blogContent.innerHTML = "<p class='text-center text-red-500'>Blog ID not provided.</p>";
+
+      const blogRef = db.collection("blogs").doc(blogId);
+      
+      try {
+        const doc = await blogRef.get();
+        if (!doc.exists) {
+          blogContent.innerHTML = "<p class='text-center text-red-500'>Blog not found.</p>";
+          return;
+        }
+
+        const blog = doc.data();
+
+        // Increment views
+        blogRef.update({ views: firebase.firestore.FieldValue.increment(1) });
+
+        // Fetch author image
+        let authorImage = 'https://api.dicebear.com/6.x/thumbs/svg?seed=' + encodeURIComponent(blog.author);
+        if (blog.authorId) {
+          try {
+            const userDoc = await db.collection("users").doc(blog.authorId).get();
+            if (userDoc.exists) authorImage = userDoc.data().photoURL || authorImage;
+          } catch {}
+        }
+
+        const date = blog.createdAt?.toDate().toLocaleDateString() || "Unknown";
+        const tagsHTML = (blog.tags || []).map(tag => `<span class="tag">${tag}</span>`).join("");
+        const featured = blog.isFeatured 
+          ? `<span class="text-xs font-bold bg-yellow-200 text-yellow-800 px-2 py-1 rounded absolute top-4 left-4">🌟 Featured</span>` 
+          : "";
+
+        blogContent.innerHTML = `
+          ${featured}
+          <h1 class="text-3xl font-bold text-purple-800 mb-2">${blog.title}</h1>
+          <p class="text-gray-600 mb-4">${blog.description}</p>
+          <div class="mb-4">${tagsHTML}</div>
+          <img src="${blog.imageUrl || 'https://via.placeholder.com/800x400'}" class="w-full h-64 object-cover rounded mb-4" />
+          <p class="text-gray-800 mb-6 whitespace-pre-line">${blog.content}</p>
+          <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+            <div class="flex items-center gap-2">
+              <img src="${authorImage}" class="w-8 h-8 rounded-full" />
+              <span>${blog.author}</span>
+            </div>
+            <span>${date}</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <button onclick="likeBlog(event, '${blogId}')" class="flex items-center gap-1 text-gray-500 hover:text-pink-600">
+              ❤️ <span id="like-count-${blogId}">${blog.likes || 0}</span>
+            </button>
+            <span>👁️ ${blog.views || 0} Views</span>
+            <button onclick="shareBlog('${window.location.href}')" class="text-gray-500 hover:text-purple-600">📤 Share</button>
+          </div>
+        `;
+
+      } catch (err) {
+        console.error(err);
+        blogContent.innerHTML = "<p class='text-center text-red-500'>Error loading blog.</p>";
+      }
+    }
+
+    function likeBlog(e, id) {
+      e.stopPropagation();
+      const user = auth.currentUser;
+      if (!user) return alert("Please sign in to like this blog.");
+
+      const blogRef = db.collection("blogs").doc(id);
+      blogRef.get().then(doc => {
+        const data = doc.data();
+        const likedBy = data.likedBy || [];
+        if (likedBy.includes(user.uid)) return alert("You already liked this blog.");
+
+        blogRef.update({
+          likes: firebase.firestore.FieldValue.increment(1),
+          likedBy: firebase.firestore.FieldValue.arrayUnion(user.uid)
+        }).then(() => {
+          const count = document.getElementById(`like-count-${id}`);
+          if (count) count.textContent = (data.likes || 0) + 1;
+        });
+      });
+    }
+
+    function shareBlog(link) {
+      navigator.clipboard.writeText(link).then(() => alert("Link copied to clipboard!"));
+    }
+
+    loadBlog();
+  </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin • Payment Settings — BCD Courses</title>
+
+  <!-- Tailwind + Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(to bottom right,#f3e8ff,#ede9fe); }
+    .card { background: white; border-radius: 14px; box-shadow: 0 10px 35px rgba(0,0,0,0.08); padding: 24px; }
+    .btn { padding: 10px 16px; border-radius: 10px; font-weight: 600; }
+    .input { padding: 12px; border-radius: 10px; border: 1px solid #ddd; width: 100%; }
+  </style>
+</head>
+
+<body class="min-h-screen p-6 overflow-y-auto">
+
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+        Course Payment Settings
+      </h1>
+      <a href="admin-manage-courses.html" class="btn bg-white border">← Back</a>
+    </div>
+
+    <div class="card space-y-6">
+
+      <h2 id="courseTitle" class="text-2xl font-bold">Loading...</h2>
+      <p id="courseDescription" class="text-gray-600"></p>
+
+      <hr>
+
+      <div>
+        <label class="font-semibold">Paid course?</label>
+        <select id="isPaid" class="input mt-1">
+          <option value="false">Free Course</option>
+          <option value="true">Paid Course</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="font-semibold">Course Price (INR)</label>
+        <input id="coursePrice" type="number" class="input mt-1" placeholder="Enter price e.g. 499" />
+      </div>
+
+      <div>
+        <label class="font-semibold">Payment Description</label>
+        <input id="paymentDesc" class="input mt-1" placeholder="Appears in Razorpay checkout" />
+      </div>
+
+      <hr>
+
+      <div class="space-y-3">
+        <button id="saveBtn" class="btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white w-full">
+          Save Payment Settings
+        </button>
+
+        <button id="testBtn" class="btn bg-white border w-full">
+          🔥 Test Razorpay Payment
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Firebase + Razorpay Logic -->
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { 
+    getFirestore, doc, getDoc, updateDoc, serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  import { requirePermission } from "/admin/guard-v10.js";
+
+  /* ------------------------------
+       FIREBASE INIT
+  --------------------------------*/
+  const firebaseConfig = {
+    apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+    authDomain: "bcd-discord.firebaseapp.com",
+    projectId: "bcd-discord",
+    storageBucket: "bcd-discord.appspot.com",
+    messagingSenderId: "278895155371",
+    appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  /* ------------------------------
+       PERMISSION GUARD (NEW SYSTEM)
+       Requires: manageCourses
+  --------------------------------*/
+  const { user, role } = await requirePermission("manageCourses");
+
+  /* ------------------------------
+       GET COURSE ID
+  --------------------------------*/
+  const params = new URLSearchParams(window.location.search);
+  const courseId = params.get("id");
+
+  if (!courseId) {
+    Swal.fire("Missing ID", "Course ID is not in URL (?id=...)", "error");
+    throw new Error("Missing course ID");
+  }
+
+  /* ------------------------------
+       DOM ELEMENTS
+  --------------------------------*/
+  const titleEl = document.getElementById("courseTitle");
+  const descEl = document.getElementById("courseDescription");
+  const isPaidEl = document.getElementById("isPaid");
+  const priceEl = document.getElementById("coursePrice");
+  const paymentDescEl = document.getElementById("paymentDesc");
+
+  /* ------------------------------
+       LOAD COURSE DATA
+  --------------------------------*/
+  async function loadCourse() {
+    const snap = await getDoc(doc(db, "courses", courseId));
+
+    if (!snap.exists()) {
+      Swal.fire("Not found", "Course does not exist.", "error");
+      return;
+    }
+
+    const c = snap.data();
+
+    titleEl.textContent = c.title;
+    descEl.textContent = c.description || "";
+
+    isPaidEl.value = c.isPaid ? "true" : "false";
+    priceEl.value = c.price ?? "";
+    paymentDescEl.value = c.paymentDescription ?? "";
+  }
+
+  await loadCourse();
+
+  /* ------------------------------
+       SAVE PAYMENT SETTINGS
+  --------------------------------*/
+  document.getElementById("saveBtn").onclick = async () => {
+    const isPaid = isPaidEl.value === "true";
+    const price = Number(priceEl.value);
+
+    if (isPaid && (!price || price <= 0)) {
+      Swal.fire("Invalid price", "Paid course must have a valid price.", "warning");
+      return;
+    }
+
+    await updateDoc(doc(db, "courses", courseId), {
+      isPaid,
+      price,
+      paymentDescription: paymentDescEl.value.trim(),
+      paymentUpdatedAt: serverTimestamp()
+    });
+
+    Swal.fire("Saved", "Payment settings updated!", "success");
+  };
+
+  /* ------------------------------
+       RAZORPAY TEST PAYMENT
+  --------------------------------*/
+  const WORKER_URL = "https://bcd-razorpay-worker.anshumanbahekar-iitb.workers.dev";
+
+  document.getElementById("testBtn").onclick = async () => {
+    const price = Number(priceEl.value);
+
+    if (!price || price <= 0) {
+      Swal.fire("Invalid Price", "Enter valid amount before testing.", "warning");
+      return;
+    }
+
+    Swal.fire({ title: "Creating order...", allowOutsideClick: false });
+    Swal.showLoading();
+
+    // Create order via Cloudflare Worker
+    const orderRes = await fetch(`${WORKER_URL}/createOrder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: price })
+    });
+
+    const order = await orderRes.json();
+    if (!order.id) {
+      Swal.fire("Error", "Failed to create Razorpay order.", "error");
+      return;
+    }
+
+    Swal.close();
+
+    // Fetch Razorpay key
+    const keyRes = await fetch(`${WORKER_URL}/getKey`);
+    const keyJson = await keyRes.json();
+    const key = keyJson.key;
+
+    if (!key) {
+      Swal.fire("Error", "Failed to fetch Razorpay key.", "error");
+      return;
+    }
+
+    // Dynamically load Razorpay SDK
+    await new Promise(resolve => {
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = resolve;
+      document.body.appendChild(s);
+    });
+
+    const options = {
+      key,
+      amount: order.amount,
+      currency: "INR",
+      name: "Books Coffee and Dreams",
+      description: paymentDescEl.value || "Test Payment",
+      order_id: order.id,
+      handler: async (response) => {
+        Swal.fire({ title: "Verifying...", allowOutsideClick: false });
+        Swal.showLoading();
+
+        const verifyRes = await fetch(`${WORKER_URL}/verifyPayment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(response)
+        });
+
+        const verifyJson = await verifyRes.json();
+
+        if (verifyJson.verified) {
+          Swal.fire("Success", "Payment verified successfully!", "success");
+        } else {
+          Swal.fire("Failed", "Payment verification failed!", "error");
+        }
+      }
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+  };
+
+</script>
+
+</body>
+</html>

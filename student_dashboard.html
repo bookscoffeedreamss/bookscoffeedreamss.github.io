@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BCD • Student Dashboard</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #faf5ff, #ede9fe);
+      font-family: "Outfit", sans-serif;
+    }
+    .glass {
+      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 8px 20px rgba(140, 20, 255, 0.15);
+    }
+    .hover-up:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 30px rgba(140, 20, 255, 0.25);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="p-6 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-extrabold">🎓 Student Dashboard</h1>
+        <p class="text-purple-100">Welcome back, <span id="username"></span></p>
+      </div>
+
+      <button id="logoutBtn" class="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6 space-y-10">
+
+    <!-- My Courses Section -->
+    <section class="glass p-6 rounded-2xl">
+      <h2 class="text-2xl font-bold text-purple-900 mb-4">📚 My Courses</h2>
+
+      <div id="myCoursesContainer"
+           class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      </div>
+
+      <p id="noCourses" class="hidden text-center text-purple-700 mt-6">
+        You haven't enrolled in any courses yet 😕  
+        <br />
+        <a href="courses.html" class="text-purple-900 underline font-semibold">
+          Browse Courses →
+        </a>
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="text-center text-purple-500 py-6 text-sm">
+    © 2025 Books Coffee and Dreams
+  </footer>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    /* ---- Firebase Config ---- */
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.firebasestorage.app",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+      measurementId: "G-6Q46Z9ZF0D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const usernameEl = document.getElementById("username");
+    const myCoursesContainer = document.getElementById("myCoursesContainer");
+    const noCourses = document.getElementById("noCourses");
+
+    /* ---- Load Dashboard ---- */
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        return window.location.href = "login.html";
+      }
+
+      usernameEl.textContent = user.email || "Student";
+
+      const all = await getDocs(collection(db, "courses_main"));
+      const courses = all.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // filter courses where user.uid is in students[]
+      const enrolled = courses.filter(c => c.students?.includes(user.uid));
+
+      if (enrolled.length === 0) {
+        noCourses.classList.remove("hidden");
+        return;
+      }
+
+      myCoursesContainer.innerHTML = enrolled.map(c => `
+        <div class="glass p-4 rounded-xl hover-up cursor-pointer"
+             onclick="window.location.href='course-content.html?id=${c.id}'">
+          <img class="w-full h-40 object-cover rounded-lg"
+               src="${c.thumbnails?.[0]?.url || ''}" />
+
+          <h3 class="mt-3 text-xl font-bold text-purple-900">${c.title}</h3>
+
+          <p class="text-purple-700 text-sm mt-1">
+            ${c.category} • ${c.duration}
+          </p>
+
+          <p class="text-purple-900 font-semibold mt-2">
+            ${c.price == 0 ? "Free Course" : "Paid Course"}
+          </p>
+
+          <div class="mt-3 bg-purple-200 h-2 rounded">
+            <div class="bg-purple-600 h-2 rounded w-[20%]"></div>
+          </div>
+          <p class="text-xs text-purple-700 mt-1">Progress: 20%</p>
+        </div>
+      `).join("");
+    });
+
+    /* ---- Logout ---- */
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "login.html";
+    });
+
+  </script>
+
+</body>
+</html>

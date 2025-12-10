@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | BCD</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Favicon -->
+  <link href="/logo.png" rel="icon">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to bottom right, #f3e8ff, #ede9fe);
+    }
+
+    .blur-glow {
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, rgba(168,85,247,0.45), transparent);
+      filter: blur(80px);
+      z-index: -1;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 18px;
+      padding: 24px;
+      transition: all 0.25s ease;
+      box-shadow: 0 25px 45px rgba(128, 90, 213, 0.15);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 35px 60px rgba(128, 90, 213, 0.22);
+    }
+
+    .admin-btn {
+      padding: 14px;
+      border-radius: 14px;
+      background: linear-gradient(to right, #a855f7, #7c3aed);
+      color: white;
+      font-weight: 600;
+      text-align: center;
+      transition: 0.25s;
+    }
+
+    .admin-btn:hover {
+      transform: scale(1.05);
+    }
+
+    #adminName, #adminPhoto {
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen p-6">
+
+  <!-- Glow Elements -->
+  <div class="blur-glow top-12 left-12"></div>
+  <div class="blur-glow bottom-12 right-12"></div>
+
+  <!-- Header -->
+  <header class="flex justify-between items-center mb-10">
+    <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+      Dashboard
+    </h1>
+
+    <div class="flex items-center gap-4">
+      <span id="adminName" class="font-semibold"></span>
+      <img id="adminPhoto" class="w-12 h-12 rounded-full border-2 border-purple-400 shadow object-cover" src="/default-avatar.png" alt="profile">
+    </div>
+  </header>
+
+  <!-- Greeting -->
+  <h2 id="greeting" class="text-2xl font-bold text-gray-700 mb-8"></h2>
+
+  <!-- GRID OPTIONS -->
+  <div id="cardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <a id="card-manageUsers" href="https://bookscoffeedreams.github.io/admin/users/admin-users.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">👥 Manage Users</h3>
+        <p class="text-gray-700 text-sm">Promote, demote, delete, and view user profiles.</p>
+      </div>
+    </a>
+
+    <a id="card-manageCourses" href="https://bookscoffeedreams.github.io/admin/courses/admin-courses.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">📚 Manage Courses</h3>
+        <p class="text-gray-700 text-sm">Create, update, or delete learning courses.</p>
+      </div>
+    </a>
+
+    <a id="card-manageBlogs" href="https://bookscoffeedreams.github.io/admin/blogs/admin-blogs.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">📝 Manage Blogs</h3>
+        <p class="text-gray-700 text-sm">Publish and edit blog posts.</p>
+      </div>
+    </a>
+
+    <a id="card-manageContent" href="https://bookscoffeedreams.github.io/admin/content/admin-content.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">🎨 Manage Content</h3>
+        <p class="text-gray-700 text-sm">Edit landing pages, banners & app content.</p>
+      </div>
+    </a>
+
+    <!-- fixed missing quote and id -->
+    <a id="card-staffApplications" href="https://bookscoffeedreams.github.io/admin/staff/admin-staff-applications.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">📑 Staff Applications</h3>
+        <p class="text-gray-700 text-sm">Approve or reject new staff applicants.</p>
+      </div>
+    </a>
+
+    <a id="card-analytics" href="https://bookscoffeedreams.github.io/admin/analytics/admin-analytics.html">
+      <div class="card cursor-pointer">
+        <h3 class="text-xl font-semibold text-purple-700 mb-2">📊 Analytics</h3>
+        <p class="text-gray-700 text-sm">Monitor growth & performance insights.</p>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Logout -->
+  <div class="mt-10">
+    <button id="logoutBtn" class="admin-btn w-full">Logout</button>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { requireAnyPermission } from "/admin/guard-v10.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const adminName = document.getElementById("adminName");
+    const adminPhoto = document.getElementById("adminPhoto");
+    const greeting = document.getElementById("greeting");
+
+    // Greeting text function
+    function getGreeting() {
+      const hour = new Date().getHours();
+      if (hour < 12) return "Good Morning";
+      if (hour < 18) return "Good Afternoon";
+      return "Good Evening";
+    }
+
+    (async () => {
+      try {
+        // requireAnyPermission should redirect/reject if user not allowed.
+        // It should return something like { user, userData, role, permissions }.
+        const guard = await requireAnyPermission();
+        // guard may return userData and permissions; fallback to fetching user doc
+        const user = guard.user;
+        let userData = guard.userData || null;
+        const permissions = guard.permissions || {};
+
+        if (!userData) {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          userData = snap.exists() ? snap.data() : {};
+        }
+
+        // set UI
+        adminName.textContent = userData.name ?? "User";
+        adminPhoto.src =
+          (userData.photoURL && userData.photoURL.trim()) ? userData.photoURL
+          : (userData.profileURL && userData.profileURL.trim()) ? userData.profileURL
+          : "/default-avatar.png";
+
+        const firstName = (userData.name ?? "User").trim().split(" ")[0];
+        greeting.textContent = `${getGreeting()}, ${firstName} 🌟`;
+
+        // Define which permission controls which card
+        const cards = [
+          { id: "card-manageUsers", perm: "manageUsers" },
+          { id: "card-manageCourses", perm: "manageCourses" },
+          { id: "card-manageBlogs", perm: "manageBlogs" },       // adjust if you use a different perm name
+          { id: "card-manageContent", perm: "manageContent" },
+          { id: "card-staffApplications", perm: "manageUsers" }, // staff apps commonly under user management
+          { id: "card-analytics", perm: "admin" }                // admin-only
+        ];
+
+        // Show or hide cards depending on permissions (admin bypass)
+        cards.forEach(({ id, perm }) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (permissions.admin === true || permissions[perm] === true) {
+            el.style.display = "block";
+          } else {
+            el.style.display = "none";
+          }
+        });
+
+        // Click → go to profile
+        adminName.onclick = () => { window.location.href = "/profile.html"; };
+        adminPhoto.onclick = () => { window.location.href = "/profile.html"; };
+
+        // Logout
+        document.getElementById("logoutBtn").onclick = () => signOut(auth);
+      } catch (err) {
+        console.error("Guard/Init error:", err);
+        // if guard redirected already, this won't run — otherwise send user to login
+        Swal.fire("Access error", "Please login with an account that has permissions.", "error")
+          .then(() => window.location.href = "/login.html");
+      }
+    })();
+  </script>
+
+</body>
+</html>

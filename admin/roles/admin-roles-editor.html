@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BCD — Role Editor (Final • Firestore + Cloudinary)</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase (compat build for simplicity, matches earlier files you used) -->
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+
+
+  <style>
+    :root{ --accent:#6366f1; --muted:#6b7280; --panel-border:rgba(15,23,42,0.04); --swatch-size:30px; }
+    html,body{height:100%}
+    body{ font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial; background:linear-gradient(180deg,#faf8ff 0%,#f5f7ff 100%); margin:0; padding:28px; color:#0f172a; }
+    .container{max-width:1150px;margin:0 auto;}
+    .card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.06);border:1px solid var(--panel-border);}
+    .tabs button{color:var(--muted);padding:8px 12px;border-radius:8px;background:transparent;border:0}
+    .tabs button.active{color:#0b1220;background:linear-gradient(180deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02));}
+    .style-cards{display:flex;gap:14px;align-items:flex-start}
+    .style-card{width:210px;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#0b1220;color:white;padding:10px;box-shadow:0 8px 30px rgba(2,6,23,0.08)}
+    .style-card .preview{height:64px;border-radius:8px;display:flex;gap:12px;align-items:center;padding:10px}
+    .style-card .avatar{width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+    .style-card .label{display:flex;justify-content:space-between;margin-top:8px;align-items:center}
+    .style-card .label .title{font-weight:700;font-size:13px;color:#e6eefc}
+    .style-card.selected{outline:4px solid rgba(99,102,241,0.12);box-shadow:0 18px 60px rgba(99,102,241,0.10);transform:translateY(-4px)}
+    .swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .swatch{width:var(--swatch-size);height:var(--swatch-size);border-radius:8px;cursor:pointer;position:relative;border:2px solid transparent;box-shadow:0 6px 18px rgba(2,6,23,0.04);transition:all .18s}
+    .swatch:hover{transform:translateY(-3px)}
+    .swatch .check{position:absolute;right:-6px;top:-6px;background:#fff;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent);box-shadow:0 6px 14px rgba(2,6,23,0.08)}
+    .swatch.selected{outline:3px solid rgba(99,102,241,0.12);box-shadow:0 12px 40px rgba(99,102,241,0.08);transform:translateY(-2px)}
+    .gradient-swatch{width:100%;height:100%;border-radius:6px;display:block}
+    .big-chip{width:190px;height:56px;border-radius:10px;border:1px solid rgba(15,23,42,0.03);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;box-shadow:0 8px 30px rgba(2,6,23,0.06);overflow:hidden}
+    .preview-bubble{border-radius:10px;padding:12px;display:flex;gap:12px;align-items:flex-start;background:#f1f5ff;border:1px solid rgba(15,23,42,0.03)}
+    .role-name{font-weight:700;font-size:15px;line-height:1;-webkit-background-clip:text;-webkit-text-fill-color:currentColor;background-clip:text;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .message{color:#374151;margin-top:4px;font-size:14px}
+    .anim-gradient-sheen{ --g1:var(--g1,#d934a2); --g2:var(--g2,#ffa6e1); --g3:var(--g3,var(--g1)); background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3)); background-size:300% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:sheenPan 4.6s cubic-bezier(.22,.9,.32,.99) infinite; }
+    @keyframes sheenPan{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .holo-text{ background:conic-gradient(from 0deg, #ffd36b, #ff8bf2, #8da0ff, #7bf2d4, #ffd36b); background-size:400% 400%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; animation:holoFlow 6.5s linear infinite; filter:saturate(1.05) contrast(1.02); }
+    @keyframes holoFlow{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .hidden-control{display:none !important}
+    .icon-box{width:96px;height:96px;border-radius:12px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(15,23,42,0.05);overflow:hidden}
+    @media (max-width:980px){ .style-cards{flex-wrap:wrap} .grid-cols-3-mobile{grid-template-columns:1fr} }
+    #membersList > div {
+  overflow: hidden;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <div class="text-sm text-gray-500">EDIT ROLE — <span id="roleHeaderSmall" class="font-semibold">COOL ROLE</span></div>
+          <div class="text-2xl font-extrabold mt-1" id="roleHeaderBig">COOL ROLE</div>
+        </div>
+        <div class="tabs flex items-center gap-2">
+  <button id="tabDisplay" class="active">Display</button>
+  <button id="tabPermissions">Permissions</button>
+  <button id="tabLinks">Links</button>
+  <button id="tabMembers">Manage Members</button>
+</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6 grid-cols-3-mobile">
+        <!-- PERMISSIONS PANEL -->
+<div id="permissionsPanel" class="card mb-4 hidden">
+  <div class="text-lg font-bold mb-3">Role Permissions</div>
+
+  <p class="text-sm text-gray-500 mb-4">
+    Toggle what this role is allowed to do.
+  </p>
+
+  <div class="grid grid-cols-2 gap-4">
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_admin" class="w-4 h-4">
+      <span>Administrator (full access)</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_manageUsers" class="w-4 h-4">
+      <span>Manage Users</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_manageRoles" class="w-4 h-4">
+      <span>Manage Roles</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_manageCourses" class="w-4 h-4">
+      <span>Manage Courses</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_manageSubjects" class="w-4 h-4">
+      <span>Manage Subjects</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+      <input type="checkbox" id="perm_manageContent" class="w-4 h-4">
+      <span>Manage Content (lectures, chapters)</span>
+    </label>
+
+    <label class="flex items-center gap-3">
+  <input type="checkbox" id="perm_manageDoubts" class="w-4 h-4">
+  <span>Manage Doubts</span>
+</label>
+
+<label class="flex items-center gap-3">
+  <input type="checkbox" id="perm_manageExams" class="w-4 h-4">
+  <span>Manage Exams</span>
+</label>
+
+  </div>
+
+  <p class="text-sm text-gray-400 mt-4">
+    These permissions sync with admin pages + Firestore rules.
+  </p>
+</div>
+        <!-- LINKS PANEL (Option B: Dynamic Add/Remove) -->
+<div id="linksPanel" class="card mb-4 hidden">
+  <div class="text-lg font-bold mb-3">Role Links</div>
+
+  <p class="text-sm text-gray-500 mb-4">
+    Add URLs that this role should use. (Dashboards, tools, help pages, etc.)
+  </p>
+
+  <div id="linksList" class="flex flex-col gap-3"></div>
+
+  <button id="addLinkBtn"
+    class="mt-4 px-3 py-2 bg-indigo-600 text-white rounded">
+    + Add Link
+  </button>
+
+  <p class="text-sm text-gray-400 mt-4">
+    Example: key = "dashboard", url = "/teacher/dashboard.html"
+  </p>
+</div>
+        <!-- MEMBERS PANEL -->
+<div id="membersPanel" class="card mb-4 hidden col-span-3">
+  <div class="text-lg font-bold mb-3">Manage Members</div>
+
+  <p class="text-sm text-gray-500 mb-4">
+    Assign or remove this role from users.
+  </p>
+
+  <input 
+    id="memberSearch"
+    type="text"
+    placeholder="Search users by name or email..."
+    class="w-full px-3 py-2 border rounded mb-4"
+  />
+
+  <div id="membersList" class="flex flex-col gap-3"></div>
+</div>
+        <div class="col-span-2">
+          <div id="displayPanelCard" class="card mb-4">
+            <label class="text-sm font-medium">Role Name <span class="text-red-500">*</span></label>
+            <input id="roleName" class="mt-2 w-full px-4 py-3 border rounded-lg" placeholder="e.g. Teacher / Moderator" />
+
+            <div class="mt-5">
+              <div class="text-sm font-medium">Role Style</div>
+              <div class="mt-3 style-cards" id="styleCardsWrap"></div>
+              <div class="mt-3 text-sm text-gray-500">All styles are available for BCD roles.</div>
+            </div>
+
+            <div class="mt-6">
+              <div class="flex items-center gap-4">
+                <div>
+                  <div class="text-sm font-medium">Role Color</div>
+                  <div class="mt-3 flex items-center gap-4">
+                    <div id="bigPreviewWrapper">
+                      <div id="bigChip" class="big-chip" style="background:#5865F2"></div>
+                    </div>
+                    <div>
+                      <div id="colorModeContainer">
+                        <div class="swatches" id="swatches"></div>
+                      </div>
+
+                      <div id="colorPickerRow" class="mt-2 flex items-center gap-2">
+                        <input id="colorPicker" type="color" value="#5865F2" class="w-12 h-9 p-0 border-0 rounded" />
+                        <div class="text-sm text-gray-500">Custom color (Solid only)</div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ml-auto text-sm text-gray-600">
+                  Selected:
+                  <div id="selectedLabel" class="mt-2 font-semibold">Solid • #5865F2</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 flex items-start gap-6">
+              <div>
+                <div class="text-sm font-medium">Role icon <span class="text-gray-500">(64×64, ≤256KB)</span></div>
+                <div class="mt-3 flex items-center gap-3">
+                  <div id="iconBox" class="icon-box"><span id="iconEmoji" style="font-size:32px">🖼️</span></div>
+                  <label class="px-3 py-2 rounded bg-indigo-600 text-white cursor-pointer">
+                    Choose Image
+                    <input id="iconInput" type="file" accept="image/*" class="hidden">
+                  </label>
+                </div>
+              </div>
+
+              <div class="ml-auto w-2/5 min-w-[240px]">
+                <div class="text-sm font-medium">Example Preview</div>
+                <div class="mt-3 preview-bubble" id="messagePreview">
+                  <div id="previewAvatar" style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;background:#5865F2">R</div>
+                  <div class="flex-1">
+                    <div class="role-name" id="previewRoleName" title="Cool Role">Cool Role</div>
+                    <div class="message" id="previewMessage">rocks are really old</div>
+                  </div>
+                  <div class="ml-2">
+                    <div style="font-size:12px" class="text-gray-500">5:53 PM</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+              <button id="saveBtn" class="px-4 py-2 rounded bg-indigo-600 text-white">Save</button>
+              <button id="cancelBtn" class="px-4 py-2 rounded border">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="text-sm font-medium mb-2">Preview message</div>
+            <div class="text-sm text-gray-500 mb-3">This preview shows how the role will appear in chat messages.</div>
+
+            <div class="mt-3 preview-bubble" id="smallPreview">
+              <div id="smallAvatar" style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;background:#5865F2">R</div>
+              <div>
+                <div id="smallName" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Cool Role</div>
+                <div class="text-sm text-gray-500">rocks are really old</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* ---------------- CONFIG ---------------- */
+// Cloudinary (from your input)
+const CLOUDINARY_CLOUD = "dkxuilgai";
+const CLOUDINARY_UPLOAD_PRESET = "bcd_courses";
+
+// Firestore/organization path
+const ORG_ID = "bcd"; // default — change if you want a different org path
+
+// Firebase config (re-used from earlier in this conversation)
+const firebaseConfig = {
+  apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+  authDomain: "bcd-discord.firebaseapp.com",
+  projectId: "bcd-discord",
+  storageBucket: "bcd-discord.appspot.com",
+  messagingSenderId: "278895155371",
+  appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+};
+
+/* ---------- initialize Firebase (compat) ---------- */
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+/* ---------- palettes ---------- */
+const solidSwatches = [
+  '#5865F2','#FF66CC','#FF7A7A','#FF9B6E','#FFC857','#43B581','#00B0F4','#8B5CF6','#A6B0FF','#7F8C8D'
+];
+
+const gradientSwatches = [
+  { id:'g1', from:'#d934a2', to:'#ffa6e1' },
+  { id:'g2', from:'#FF5E5E', to:'#bd8b75' },
+  { id:'g3', from:'#E89A4B', to:'#F3E1B5' },
+  { id:'g4', from:'#2ECC71', to:'#A8F0C7' },
+  { id:'g5', from:'#5BC0FF', to:'#A4E1FF' },
+  { id:'g6', from:'#8B5CF6', to:'#C9B8FF' },
+  { id:'g7', from:'#FF7ACD', to:'#FFD1E8' },
+  { id:'g8', from:'#A6B0FF', to:'#DCD8FF' }
+];
+
+/* ---------- model & DOM refs ---------- */
+let role = {
+  name: 'Cool Role',
+  style: 'solid',
+  color: '#5865F2',
+  gradientId: 'g1',
+  iconDataUrl: null,
+  iconFile: null,
+  permissions: {
+  admin: false,
+  manageUsers: false,
+  manageRoles: false,
+  manageCourses: false,
+  manageSubjects: false,
+  manageContent: false,
+  manageDoubts: false,
+  manageExams: false
+},
+  links: {}   // NEW
+};
+
+const styleCardsWrap = document.getElementById('styleCardsWrap');
+const swatchesContainer = document.getElementById('swatches');
+const bigChip = document.getElementById('bigChip');
+const colorPickerRow = document.getElementById('colorPickerRow');
+const colorPicker = document.getElementById('colorPicker');
+const roleNameInput = document.getElementById('roleName');
+const previewRoleName = document.getElementById('previewRoleName');
+const smallName = document.getElementById('smallName');
+const previewAvatar = document.getElementById('previewAvatar');
+const smallAvatar = document.getElementById('smallAvatar');
+const iconInput = document.getElementById('iconInput');
+const iconBox = document.getElementById('iconBox');
+const selectedLabel = document.getElementById('selectedLabel');
+const saveBtn = document.getElementById('saveBtn');
+
+/* ---------- UI rendering ---------- */
+const styles = [
+  { key:'solid', title:'Solid' },
+  { key:'gradient', title:'Gradient' },
+  { key:'holo', title:'Holographic' }
+];
+
+function renderStyleCards(){
+  styleCardsWrap.innerHTML = '';
+  styles.forEach(s=>{
+    const card = document.createElement('div');
+    card.className = 'style-card ' + (role.style === s.key ? 'selected' : '');
+    let previewHtml = '';
+    if (s.key === 'solid'){
+      previewHtml = `<div class="preview" style="background:${role.color};">
+        <div class="avatar"
+     style="background:${role.color};display:flex;align-items:center;justify-content:center;">
+  <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/account.png?raw=true"
+     style="width:44px;height:44px;object-fit:contain;" />
+</div>
+        <div style="font-weight:700;align-self:center">Sample</div>
+      </div>`;
+    } else if (s.key === 'gradient'){
+      const g = gradientSwatches.find(x=>x.id===role.gradientId) || gradientSwatches[0];
+      previewHtml = `<div class="preview" style="background:linear-gradient(135deg, ${g.from}, ${g.to});">
+        <div class="avatar"
+     style="background:${role.color};display:flex;align-items:center;justify-content:center;">
+  <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/account.png?raw=true"
+     style="width:44px;height:44px;object-fit:contain;" />
+</div>
+        <div style="font-weight:700;align-self:center">Sample</div>
+      </div>`;
+    } else {
+      previewHtml = `<div class="preview" style="background:linear-gradient(90deg, rgba(255,0,150,0.10), rgba(0,200,255,0.06));">
+        <div class="avatar"
+     style="background:${role.color};display:flex;align-items:center;justify-content:center;">
+  <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/account.png?raw=true"
+     style="width:44px;height:44px;object-fit:contain;" />
+</div>
+        <div style="font-weight:700;align-self:center">Sample</div>
+      </div>`;
+    }
+    card.innerHTML = previewHtml + `<div class="label"><div class="title">${s.title}</div><div class="text-xs" style="color:rgba(255,255,255,0.6)">Preview</div></div>`;
+    card.addEventListener('click', ()=>{
+      role.style = s.key; updateUI();
+    });
+    styleCardsWrap.appendChild(card);
+  });
+}
+
+function renderSolidSwatches(){
+  swatchesContainer.innerHTML = '';
+  solidSwatches.forEach(c=>{
+    const div = document.createElement('div');
+    div.className = 'swatch' + (c.toLowerCase() === (role.color||'').toLowerCase() ? ' selected' : '');
+    div.style.background = c;
+    if (div.classList.contains('selected')) {
+      const ck = document.createElement('div'); ck.className = 'check'; ck.innerHTML = '✓'; div.appendChild(ck);
+    }
+    div.addEventListener('click', ()=>{ role.color = c; colorPicker.value = c; updateUI(); });
+    swatchesContainer.appendChild(div);
+  });
+}
+
+function renderGradientSwatches(){
+  swatchesContainer.innerHTML = '';
+  gradientSwatches.forEach(g=>{
+    const div = document.createElement('div');
+    div.className = 'swatch' + (g.id === role.gradientId ? ' selected' : '');
+    const inner = document.createElement('div'); inner.className = 'gradient-swatch';
+    inner.style.background = `linear-gradient(135deg, ${g.from}, ${g.to})`;
+    div.appendChild(inner);
+    if (div.classList.contains('selected')) {
+      const ck = document.createElement('div'); ck.className = 'check'; ck.innerHTML = '✓'; div.appendChild(ck);
+    }
+    div.addEventListener('click', ()=>{ role.gradientId = g.id; role.color = g.from; updateUI(); });
+    swatchesContainer.appendChild(div);
+  });
+}
+
+function updateBigChip(){
+  if (role.style === 'gradient'){
+    const g = gradientSwatches.find(x=>x.id===role.gradientId) || gradientSwatches[0];
+    bigChip.style.background = `linear-gradient(90deg, ${g.from}, ${g.to})`;
+    bigChip.style.color = '#fff';
+    bigChip.classList.remove('hidden-control');
+  } else if (role.style === 'solid'){
+    bigChip.style.background = role.color;
+    bigChip.style.color = '#fff';
+    bigChip.classList.remove('hidden-control');
+  } else {
+    bigChip.classList.add('hidden-control');
+  }
+}
+
+/* ---------- icon handling ---------- */
+iconInput.addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 256*1024){ alert('Icon too large (max 256KB)'); return; }
+  role.iconFile = f; // keep file reference for Cloudinary upload
+  const reader = new FileReader();
+  reader.onload = ()=>{ role.iconDataUrl = reader.result; updateUI(); };
+  reader.readAsDataURL(f);
+});
+
+/* ---------- other inputs ---------- */
+colorPicker.addEventListener('input', (e)=>{ role.color = e.target.value; updateUI(); });
+roleNameInput.addEventListener('input', (e)=>{ role.name = e.target.value; updateUI(); });
+
+/* ---------- text styling ---------- */
+function applyTextStyle(el){
+  el.classList.remove('anim-gradient-sheen','holo-text');
+  el.style.color=''; el.style.background=''; el.style.setProperty('--g1',''); el.style.setProperty('--g2',''); el.style.setProperty('--g3','');
+  if (role.style === 'solid'){ el.style.color = role.color; }
+  else if (role.style === 'gradient'){
+    const g = gradientSwatches.find(x=>x.id===role.gradientId) || gradientSwatches[0];
+    el.style.setProperty('--g1', g.from); el.style.setProperty('--g2', g.to); el.style.setProperty('--g3', g.from);
+    el.classList.add('anim-gradient-sheen');
+  } else if (role.style === 'holo'){ el.classList.add('holo-text'); }
+}
+
+/* ---------- controls visibility ---------- */
+function updateControlsVisibility(){
+  if (role.style === 'solid'){ colorPickerRow.classList.remove('hidden-control'); colorPicker.disabled=false; }
+  else if (role.style === 'gradient'){ colorPickerRow.classList.add('hidden-control'); colorPicker.disabled=true; }
+  else { colorPickerRow.classList.add('hidden-control'); colorPicker.disabled=true; }
+}
+
+/* ---------- selected label ---------- */
+function updateSelectedLabel(){
+  if (role.style === 'solid') selectedLabel.textContent = `Solid • ${role.color.toUpperCase()}`;
+  else if (role.style === 'gradient'){
+    const g = gradientSwatches.find(x=>x.id===role.gradientId) || gradientSwatches[0];
+    selectedLabel.textContent = `Gradient • ${g.from.toUpperCase()} → ${g.to.toUpperCase()}`;
+  } else selectedLabel.textContent = `Holographic`;
+}
+
+/* ---------- main update ---------- */
+function updateUI(){
+  renderStyleCards();
+  if (role.style === 'solid') renderSolidSwatches();
+  else if (role.style === 'gradient') renderGradientSwatches();
+  else swatchesContainer.innerHTML = '';
+  updateControlsVisibility(); updateBigChip();
+    document.getElementById('roleHeaderBig').textContent = (role.name || 'Role').toUpperCase();
+  document.getElementById('roleHeaderSmall').textContent = (role.name || 'Role');
+
+  // KEEP the input in sync with the model so loaded role shows in the field
+  roleNameInput.value = role.name || '';
+
+  applyTextStyle(previewRoleName); applyTextStyle(smallName);
+  previewAvatar.style.background = role.color || '#94a3b8';
+  smallAvatar.style.background   = role.color || '#94a3b8';
+  const letter = (role.name && role.name.trim() !== "") ? role.name[0] : "R";
+previewAvatar.innerHTML = `
+  <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/account.png?raw=true"
+       style="width:44px;height:44px;object-fit:contain;" />
+`;
+smallAvatar.innerHTML = `
+  <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/account.png?raw=true"
+       style="width:39px;height:39px;object-fit:contain;" />
+`;
+  if (role.iconDataUrl) iconBox.innerHTML = `<img src="${role.iconDataUrl}" style="width:96px;height:96px;object-fit:cover;border-radius:12px" />`;
+  else iconBox.innerHTML = `<span style="font-size:32px">🖼️</span>`;
+  colorPicker.value = role.color || '#5865F2';
+  updateSelectedLabel();
+}
+
+/* ---------- Cloudinary upload helper ---------- */
+async function uploadToCloudinary(file) {
+  if (!file) return null;
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+  const res = await fetch(url, { method: 'POST', body: fd });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error('Cloudinary upload failed: ' + text);
+  }
+  const json = await res.json();
+  return json.secure_url || json.url;
+}
+
+  // Debounce helper — call once and it returns a debounced wrapper
+function debounce(fn, wait = 300) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
+}
+
+  /* ---------- LINKS: ADD / LOAD ROWS ---------- */
+
+function addLinkRow(key = "", url = "") {
+  const row = document.createElement("div");
+  row.className = "flex items-center gap-3 border p-2 rounded";
+
+  const keyInput = document.createElement("input");
+  keyInput.className = "link-key px-2 py-1 border rounded w-1/3";
+  keyInput.placeholder = "key";
+  keyInput.value = key;
+
+  const urlInput = document.createElement("input");
+  urlInput.className = "link-url px-2 py-1 border rounded flex-1";
+  urlInput.placeholder = "URL";
+  urlInput.value = url;
+
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "removeLink px-2 py-1 bg-red-500 text-white rounded";
+  removeBtn.type = "button";
+  removeBtn.textContent = "X";
+  removeBtn.onclick = () => row.remove();
+
+  row.appendChild(keyInput);
+  row.appendChild(urlInput);
+  row.appendChild(removeBtn);
+
+  document.getElementById("linksList").appendChild(row);
+}
+
+document.getElementById("addLinkBtn").onclick = () => addLinkRow();
+
+  /* ---------- MEMBERS LOADER (assign / remove role) ---------- */
+async function loadMembersForRole() {
+  const list = document.getElementById("membersList");
+  list.innerHTML = "Loading...";
+
+  const roleId = getQueryParam("roleId");
+  if (!roleId) {
+    list.innerHTML = "<div class='text-gray-500'>Save the role first.</div>";
+    return;
+  }
+
+  // current signed-in user id (should exist because we init after auth)
+  const currentUid = firebase.auth().currentUser?.uid;
+
+  try {
+    // NOTE: In production prefer server-side search / pagination instead of reading all users.
+    const snap = await db.collection("users").get();
+
+    list.innerHTML = "";
+
+    snap.forEach(doc => {
+      const u = doc.data();
+      const assigned = u.roleId === roleId;
+      const search = document.getElementById("memberSearch").value.toLowerCase();
+
+      // SEARCH FILTER
+      if (
+        (u.name && u.name.toLowerCase().includes(search)) ||
+        (u.email && u.email.toLowerCase().includes(search))
+      ) {
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between border p-3 rounded bg-white shadow-sm";
+
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold">${u.name || "No name"}</div>
+            <div class="text-sm text-gray-500">${u.email || ""}</div>
+          </div>
+
+          <button class="toggleRoleBtn px-3 py-1 rounded text-white ${assigned ? "bg-red-500" : "bg-green-600"}">
+            ${assigned ? "Remove" : "Assign"}
+          </button>
+        `;
+
+        const btn = row.querySelector(".toggleRoleBtn");
+
+        // Prevent the currently-signed-in user from removing/assigning their own role
+        const isSelf = doc.id === currentUid;
+        if (isSelf) {
+          btn.disabled = true;
+          btn.setAttribute('aria-disabled', 'true');
+          btn.textContent = "You";
+          btn.classList.remove("bg-green-600", "bg-red-500");
+          btn.classList.add("bg-gray-200", "text-gray-700", "cursor-not-allowed");
+        } else {
+          btn.onclick = async () => {
+            try {
+              if (assigned) {
+                await db.collection("users").doc(doc.id).update({ roleId: null });
+              } else {
+                await db.collection("users").doc(doc.id).update({ roleId: roleId });
+              }
+              // reload after change
+              loadMembersForRole();
+            } catch (err) {
+              console.error("Failed to update role for user:", err);
+              alert("Failed to update user role: " + err.message);
+            }
+          };
+        }
+
+        list.appendChild(row);
+      }
+    });
+  } catch (err) {
+    console.error("Failed to load members:", err);
+    list.innerHTML = "<div class='text-red-500'>Failed to load members.</div>";
+  }
+}
+
+// Attach debounced input handler (requires your debounce helper above)
+document.getElementById("memberSearch")
+  .addEventListener("input", debounce(loadMembersForRole, 350));
+  
+/* ---------- Firestore save (create/update) ---------- */
+async function saveRoleToFirestore(docId = null) {
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    // if user selected a file, upload it. If only dataURL stored (rare), convert to blob first.
+    let iconUrl = null;
+    if (role.iconFile) {
+      iconUrl = await uploadToCloudinary(role.iconFile);
+    } else if (role.iconDataUrl && role.iconDataUrl.startsWith('data:')) {
+      // convert dataURL to blob
+      const res = await fetch(role.iconDataUrl);
+      const blob = await res.blob();
+      iconUrl = await uploadToCloudinary(blob);
+    }
+
+    // prepare payload
+const payload = {
+  name: role.name,
+  style: role.style,
+  color: role.color,
+  gradientId: role.gradientId,
+  gradientFrom: null,
+  gradientTo: null,
+  permissions: getPermissionsFromUI(),
+  links: {},   // NEW
+  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+};
+
+// collect links
+document.querySelectorAll("#linksList > div").forEach(row => {
+  const key = row.querySelector(".link-key").value.trim();
+  const url = row.querySelector(".link-url").value.trim();
+  if (key && url) {
+    payload.links[key] = url;
+  }
+});
+
+// If style = gradient -> write color stops
+if (role.style === "gradient") {
+  const sw = gradientSwatches.find(g => g.id === role.gradientId);
+  if (sw) {
+    payload.gradientFrom = sw.from;
+    payload.gradientTo   = sw.to;
+  }
+}
+    if (iconUrl) payload.iconUrl = iconUrl;
+
+    const colRef = db.collection('organizations').doc(ORG_ID).collection('roles');
+    let docRef;
+    if (docId) {
+      docRef = colRef.doc(docId);
+      await docRef.set(payload, { merge: true });
+    } else {
+      docRef = colRef.doc(); // auto id
+      await docRef.set(payload);
+      docId = docRef.id;
+    }
+
+    saveBtn.textContent = 'Saved';
+    setTimeout(()=> saveBtn.textContent = 'Save', 1100);
+
+    // redirect or show link to edit existing role
+    alert('Role saved successfully. Role ID: ' + docId);
+    // optional: update URL so user can edit afterwards
+    const url = new URL(window.location.href);
+    url.searchParams.set('roleId', docId);
+    window.history.replaceState({}, '', url.toString());
+    return docId;
+
+  } catch (err) {
+    console.error(err);
+    alert('Save failed: ' + err.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  }
+}
+
+/* ---------- load role from Firestore ---------- */
+async function loadRoleFromFirestore(docId) {
+  if (!docId) return;
+  try {
+    const docRef = db.collection('organizations').doc(ORG_ID).collection('roles').doc(docId);
+    const snap = await docRef.get();
+    if (!snap.exists) { alert('Role not found: ' + docId); return; }
+    const data = snap.data();
+    // map fields to UI model
+    role.name = data.name || role.name;
+    role.style = data.style || role.style;
+    role.color = data.color || role.color;
+    role.gradientId = data.gradientId || role.gradientId;
+    role.permissions = data.permissions || {
+  admin: false,
+  manageUsers: false,
+  manageRoles: false,
+  manageCourses: false,
+  manageSubjects: false,
+  manageContent: false
+};
+    role.links = data.links || {};
+document.getElementById("linksList").innerHTML = "";
+Object.entries(role.links).forEach(([key, url]) => {
+  addLinkRow(key, url);
+});
+
+fillPermissions(role.permissions);
+    role.gradientFrom = data.gradientFrom || null;
+role.gradientTo   = data.gradientTo || null;
+    
+    if (data.iconUrl) {
+      // set iconDataUrl to the remote url (no file)
+      role.iconDataUrl = data.iconUrl;
+      role.iconFile = null;
+    } else {
+      role.iconDataUrl = null;
+      role.iconFile = null;
+    }
+    updateUI();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load role: ' + err.message);
+  }
+}
+
+/* ---------- URL helper ---------- */
+function getQueryParam(name) {
+  const url = new URL(window.location.href);
+  return url.searchParams.get(name);
+}
+
+/* ---------- init ---------- */
+function init() {
+  updateUI();
+
+  const rid = getQueryParam('roleId');
+  if (rid) loadRoleFromFirestore(rid);
+}
+
+/* ---------- WAIT FOR AUTH ---------- */
+firebase.auth().onAuthStateChanged(async (user) => {
+
+  if (!user) {
+    alert("You must be logged in to edit roles.");
+    window.location.href = "/admin/login.html";
+    return;
+  }
+
+  console.log("Auth Ready:", user.uid);
+
+  // Load user's assigned roleId
+  const u = await db.collection("users").doc(user.uid).get();
+  const roleId = u.data()?.roleId;
+
+  if (!roleId) {
+    alert("No role assigned to your account.");
+    window.location.href = "/";
+    return;
+  }
+
+  // Fetch role document
+  const roleDoc = await db.collection("organizations")
+      .doc(ORG_ID)
+      .collection("roles")
+      .doc(roleId)
+      .get();
+
+  if (!roleDoc.exists) {
+    alert("Your assigned role does not exist.");
+    window.location.href = "/";
+    return;
+  }
+
+  const perms = roleDoc.data().permissions;
+
+  if (!perms || perms.manageRoles !== true) {
+    alert("You do not have permission to manage roles.");
+    window.location.href = "/";
+    return;
+  }
+
+  // Permission OK → allow page load
+  init();
+});
+
+/* ---------- TAB SWITCHING ---------- */
+const tabDisplay = document.getElementById("tabDisplay");
+const tabPermissions = document.getElementById("tabPermissions");
+const tabLinks = document.getElementById("tabLinks");
+  const tabMembers = document.getElementById("tabMembers");
+const membersPanel = document.getElementById("membersPanel");
+
+const displayPanel = document.getElementById("displayPanelCard");
+const permissionsPanel = document.getElementById("permissionsPanel");
+const linksPanel = document.getElementById("linksPanel");
+
+function switchTo(tab) {
+  tabDisplay.classList.remove("active");
+  tabPermissions.classList.remove("active");
+  tabLinks.classList.remove("active");
+  tabMembers.classList.remove("active");
+
+  displayPanel.classList.add("hidden");
+  permissionsPanel.classList.add("hidden");
+  linksPanel.classList.add("hidden");
+  membersPanel.classList.add("hidden");
+
+  if (tab === "display") {
+    tabDisplay.classList.add("active");
+    displayPanel.classList.remove("hidden");
+  }
+  if (tab === "permissions") {
+    tabPermissions.classList.add("active");
+    permissionsPanel.classList.remove("hidden");
+  }
+  if (tab === "links") {
+    tabLinks.classList.add("active");
+    linksPanel.classList.remove("hidden");
+  }
+  if (tab === "members") {
+    tabMembers.classList.add("active");
+    membersPanel.classList.remove("hidden");
+    loadMembersForRole(); // load list when panel opens
+  }
+}
+
+tabDisplay.onclick = () => switchTo("display");
+tabPermissions.onclick = () => switchTo("permissions");
+tabLinks.onclick = () => switchTo("links");
+tabMembers.onclick = () => switchTo("members");
+
+  /* ---------- SAVE PERMISSIONS ---------- */
+function getPermissionsFromUI() {
+  return {
+    admin: document.getElementById("perm_admin").checked,
+    manageUsers: document.getElementById("perm_manageUsers").checked,
+    manageRoles: document.getElementById("perm_manageRoles").checked,
+    manageCourses: document.getElementById("perm_manageCourses").checked,
+    manageSubjects: document.getElementById("perm_manageSubjects").checked,
+    manageContent: document.getElementById("perm_manageContent").checked,
+    manageDoubts: document.getElementById("perm_manageDoubts").checked,
+    manageExams: document.getElementById("perm_manageExams").checked
+  };
+}
+
+/* ---------- LOAD PERMISSIONS ---------- */
+function fillPermissions(perms) {
+  document.getElementById("perm_admin").checked = perms.admin || false;
+  document.getElementById("perm_manageUsers").checked = perms.manageUsers || false;
+  document.getElementById("perm_manageRoles").checked = perms.manageRoles || false;
+  document.getElementById("perm_manageCourses").checked = perms.manageCourses || false;
+  document.getElementById("perm_manageSubjects").checked = perms.manageSubjects || false;
+  document.getElementById("perm_manageContent").checked = perms.manageContent || false;
+  document.getElementById("perm_manageDoubts").checked = perms.manageDoubts || false;
+  document.getElementById("perm_manageExams").checked = perms.manageExams || false;
+}
+  
+/* ---------- save/cancel ---------- */
+saveBtn.addEventListener('click', async ()=>{
+  const roleId = getQueryParam('roleId'); // update if editing
+  await saveRoleToFirestore(roleId || null);
+});
+
+document.getElementById('cancelBtn').addEventListener('click', ()=>{
+  role = { name: 'Cool Role', style: 'solid', color: '#5865F2', gradientId: 'g1', iconDataUrl: null, iconFile: null };
+  document.getElementById('roleName').value = role.name;
+  updateUI();
+});
+</script>
+</body>
+</html>

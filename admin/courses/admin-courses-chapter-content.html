@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chapter Content Editor | BCD</title>
+
+  <!-- Tailwind (quick) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Cloudinary Widget -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+    <!-- SortableJS (for drag & drop) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+  <style>
+    :root{
+      --bg-1: #FFFBFF;
+      --bg-2: #F3F7FF;
+      --accent-a: #A855F7; /* purple */
+      --accent-b: #6366F1; /* indigo */
+      --muted: #6b7280;
+      --glass: rgba(255,255,255,0.9);
+      --glass-border: rgba(99,102,241,0.06);
+      --text-dark: #0b1220;
+    }
+
+    html,body{height:100%}
+    body{
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;
+      margin:0;
+      background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      color:var(--text-dark);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      overflow-y:overlay;
+    }
+
+    .glow {
+      position:fixed;
+      filter: blur(80px);
+      opacity:0.9;
+      z-index:0;
+      pointer-events:none;
+    }
+    .glow.g1{ width:420px; height:420px; top:-80px; left:-80px; background: radial-gradient(circle at 30% 30%, rgba(168,85,247,0.28), rgba(99,102,241,0.14), transparent 40%); }
+    .glow.g2{ width:360px; height:360px; bottom:-60px; right:-40px; background: radial-gradient(circle at 70% 70%, rgba(99,102,241,0.22), rgba(34,211,238,0.10), transparent 40%); }
+
+    .app-shell{ display:flex; height:100vh; position:relative; z-index:1; }
+    .app-sidebar{
+      width:260px;
+      padding:22px;
+      box-sizing:border-box;
+      position:sticky;
+      top:24px;
+      height:calc(100vh - 48px);
+    }
+
+    .glass {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.92));
+      border-radius:14px;
+      box-shadow: 0 6px 30px rgba(20,24,40,0.06);
+      border:1px solid var(--glass-border);
+      padding:16px;
+    }
+
+    header.app-header {
+      height:72px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:0 22px;
+      margin:18px;
+    }
+    .header-left{ display:flex; align-items:center; gap:12px; }
+    .back-btn {
+      display:flex; align-items:center; gap:8px;
+      background:transparent; border:0; cursor:pointer; padding:8px; border-radius:10px;
+    }
+    .back-btn:hover{ background: rgba(0,0,0,0.03) }
+
+    .header-title{ font-weight:800; font-size:18px; color:var(--text-dark); }
+    .header-sub{ font-size:13px; color:var(--muted); margin-left:6px; font-weight:600; }
+
+    .header-right{ display:flex; align-items:center; gap:12px; }
+
+    .profile-btn{
+      display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:12px;
+      background:linear-gradient(90deg,var(--accent-a),var(--accent-b)); color:white; font-weight:700;
+      cursor:pointer; border:0;
+    }
+
+    .nav-item { display:flex; align-items:center; gap:12px; padding:10px; border-radius:10px; cursor:pointer; color:var(--text-dark); font-weight:700; }
+    .nav-item:hover{ background:rgba(99,102,241,0.06); }
+    .nav-item .icon { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:linear-gradient(135deg, rgba(168,85,247,0.12), rgba(99,102,241,0.12)); color:var(--accent-b); }
+
+    .main { flex:1; padding:22px; overflow:auto; box-sizing:border-box; position:relative; }
+
+    .panel { padding:18px; border-radius:12px; background:rgba(255,255,255,0.95); border:1px solid rgba(99,102,241,0.06); box-shadow:0 6px 24px rgba(16,24,40,0.04); }
+
+    .muted { color:var(--muted); }
+    .pill { background:transparent; border:1px solid rgba(16,24,40,0.06); padding:10px; border-radius:10px; color:var(--text-dark); }
+    .input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(16,24,40,0.06); background:rgba(255,255,255,0.9); box-sizing:border-box; font-weight:600; color:var(--text-dark); }
+    .input:focus{ outline:none; box-shadow:0 8px 30px rgba(99,102,241,0.06); border-color:rgba(99,102,241,0.18); }
+
+    .btn { padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer; border:0; }
+    .btn-ghost { background:transparent; border:1px solid rgba(16,24,40,0.05); color:var(--text-dark); }
+    .btn-primary { background:linear-gradient(90deg,var(--accent-a),var(--accent-b)); color:white; box-shadow: 0 10px 30px rgba(99,102,241,0.08); }
+
+    .list-item {
+  background:rgba(255,255,255,0.98);
+  border-radius:10px;
+  padding:10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid rgba(16,24,40,0.03);
+
+  /* REMOVE default bullet */
+  list-style: none !important;
+  position: relative;
+  padding-left: 36px; /* space for custom icon */
+}
+
+.list-item::marker {
+  content: "" !important; /* remove browser bullet */
+}
+
+.list-item::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+transform: none;
+  left: 10px;
+  width: 18px;
+height: 18px;
+  background-image: url("https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/checkmark.png?raw=true");
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+}
+
+    .thumb { width:56px; height:56px; object-fit:cover; border-radius:8px; background:linear-gradient(135deg, rgba(99,102,241,0.06), rgba(168,85,247,0.06)); display:block; }
+    .small { font-size:13px; color:var(--muted); }
+    .hr { height:1px; background:rgba(16,24,40,0.04); margin:10px 0; border-radius:2px; }
+
+    /* Tabs style 3 (glass card tabs) */
+    .tabs-row { display:flex; gap:12px; margin-bottom:12px; }
+    .tab-card {
+      padding:10px 14px; border-radius:12px; cursor:pointer; background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.95));
+      border:1px solid rgba(16,24,40,0.04); box-shadow: 0 6px 18px rgba(16,24,40,0.03); font-weight:800;
+      display:inline-flex; gap:8px; align-items:center;
+    }
+    .tab-card.active { border:1px solid rgba(99,102,241,0.12); box-shadow: 0 10px 30px rgba(99,102,241,0.06); }
+
+    .hidden { display:none; }
+
+    @media (max-width:1024px){
+      .app-sidebar{ display:none; }
+      header.app-header{ margin:12px; }
+      .main { padding:12px; }
+    }
+
+    .fade-in { animation: fadeIn 360ms ease both; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(6px) } to { opacity:1; transform:none } }
+ 
+  </style>
+</head>
+<body>
+  <div class="glow g1"></div>
+  <div class="glow g2"></div>
+
+  <header class="app-header">
+    <div class="header-left">
+      <button class="back-btn glass" id="backArrow" title="Go back">
+        <i class="fa-solid fa-arrow-left" style="color:var(--accent-b);"></i>
+        <div style="font-weight:700; color:var(--text-dark)">Back</div>
+      </button>
+      <div>
+        <div class="header-title">Chapter Content Editor — BCD</div>
+        <div class="header-sub">Manage content about your subject</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="small muted">Course ID:</div>
+      <div id="courseIdDisplay" class="pill">—</div>
+      <button id="saveBtn" class="btn btn-primary">Save</button>
+      <img id="profilePic"
+           class="w-10 h-10 rounded-full object-cover border border-white/20 cursor-pointer hover:opacity-80 transition"
+           src=""
+           alt="Profile">
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <!-- Sidebar (modified label per your choice B) -->
+    <aside class="app-sidebar">
+      <div class="glass panel">
+        <div style="font-weight:800; font-size:14px; margin-bottom:12px">Navigation</div>
+
+        <nav class="space-y-2">
+          <a href="dashboard.html" class="nav-item">
+            <span class="icon"><i class="fa-solid fa-house"></i></span>
+            <span>Home</span>
+          </a>
+
+          <a href="manage-courses.html" class="nav-item">
+            <span class="icon"><i class="fa-solid fa-graduation-cap"></i></span>
+            <span>Courses</span>
+          </a>
+
+          <a href="#" class="nav-item" aria-current="page" style="background:linear-gradient(180deg, rgba(168,85,247,0.06), rgba(99,102,241,0.04));">
+            <span class="icon"><i class="fa-solid fa-pen-to-square"></i></span>
+            <span>Chapter Content Editor</span>
+          </a>
+        </nav>
+      </div>
+    </aside>
+
+    <main class="main">
+      <!-- Top header card -->
+      <div class="panel fade-in mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <div style="font-weight:800; font-size:18px; display:flex; gap:10px; align-items:center">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/hashtag_2.png?raw=true" style="width:20px;height:20px;object-fit:contain;opacity:.9" />
+              Chapter Content Hub
+            </div>
+            <div class="small muted">Edit content for subject → chapter. Use Save to persist to Firestore.</div>
+          </div>
+
+          <div style="min-width:320px" class="flex items-center gap-3">
+            <select id="subjectSelect" class="input" style="max-width:280px"></select>
+            <select id="chapterSelect" class="input" style="max-width:220px"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs (glass card style) -->
+      <div class="panel mb-6">
+        <div class="tabs-row" id="tabsRow">
+          <div class="tab-card active" data-tab="concepts"> <i class="fa-solid fa-video" style="color:var(--accent-b)"></i> Concepts </div>
+          <div class="tab-card" data-tab="materials"> <i class="fa-solid fa-folder" style="color:var(--accent-b)"></i> Materials (Sections) </div>
+          <div class="tab-card" data-tab="study"> <i class="fa-solid fa-file" style="color:var(--accent-b)"></i> Study Modules </div>
+          <div class="tab-card" data-tab="flashcards"> <i class="fa-solid fa-clone" style="color:var(--accent-b)"></i> Flashcards </div>
+        </div>
+
+        <!-- Panels container -->
+        <div id="panelsContainer">
+          <!-- Concepts panel -->
+          <div class="panel" data-panel="concepts" id="panel-concepts">
+            <div class="small muted">Add / edit short concept videos for the chapter</div>
+            <div class="hr"></div>
+
+            <div id="conceptsList"></div>
+
+            <div class="hr"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="conceptTitle" placeholder="Title" class="input" style="max-width:260px" />
+              <input id="conceptURL" placeholder="Video URL (or upload)" class="input" style="min-width:320px" />
+              <input id="conceptThumb" placeholder="Thumbnail URL (optional)" class="input" style="max-width:260px" />
+              <button id="uploadConceptBtn" class="btn btn-ghost"><i class="fa-solid fa-upload"></i> Upload</button>
+              <button id="addConceptBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
+          </div>
+
+          <!-- Materials -->
+          <div class="panel hidden" data-panel="materials" id="panel-materials">
+            <div class="small muted">Additional material sections (Section → multiple PDFs)</div>
+            <div class="hr"></div>
+
+            <div id="materialsSections"></div>
+
+            <div class="hr"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="newSectionName" placeholder="New Section (eg. RACE & Solutions)" class="input" style="flex:1" />
+              <button id="createSectionBtn" class="btn btn-primary">Create Section</button>
+            </div>
+
+            <div class="hr"></div>
+            <div class="small muted">Add PDF to selected section</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+              <select id="sectionSelect" class="input" style="min-width:160px"></select>
+              <input id="pdfTitle" placeholder="PDF title" class="input" style="min-width:200px" />
+              <input id="pdfURL" placeholder="PDF URL (or upload)" class="input" style="min-width:260px" />
+              <button id="uploadPDFBtn" class="btn btn-ghost"><i class="fa-solid fa-file-pdf"></i> Upload PDF</button>
+              <button id="addPdfBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add PDF</button>
+            </div>
+          </div>
+
+          <!-- Study -->
+          <div class="panel hidden" data-panel="study" id="panel-study">
+            <div class="small muted">Chapter study modules (simple PDFs)</div>
+            <div class="hr"></div>
+
+            <div id="studyList"></div>
+
+            <div class="hr"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <input id="studyTitle" placeholder="Module title (e.g. Notes - Part A)" class="input" style="min-width:220px" />
+              <input id="studyURL" placeholder="PDF URL (or upload)" class="input" style="min-width:340px" />
+              <button id="uploadStudyBtn" class="btn btn-ghost"><i class="fa-solid fa-upload"></i> Upload</button>
+              <button id="addStudyBtn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
+          </div>
+
+          <!-- Flashcards -->
+          <div class="panel hidden" data-panel="flashcards" id="panel-flashcards">
+            <div class="small muted">Flashcards → Simple cards (front, back, hint, image)</div>
+<div class="hr"></div>
+
+<div id="flashcardsList"></div>
+
+<div class="hr"></div>
+<button id="addFlashcardBtn" class="btn btn-primary">
+  <i class="fa-solid fa-plus"></i> Add Card
+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right info panel -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="col-span-2">
+          <!-- small note area; left empty on purpose (keeps layout similar to Course Editor) -->
+        </div>
+
+        <aside class="panel">
+          <div style="font-weight:800; display:flex; gap:8px; align-items:center">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/icons/selection.png?raw=true" style="width:18px;height:18px" />
+            <span id="rightHeaderText">Selected context</span>
+          </div>
+          <div class="small muted mb-3" id="rightSub">—</div>
+
+          <div class="space-y-4">
+            <div>
+              <div class="small muted">Selected Subject</div>
+              <div id="selSubjectName" style="font-weight:800">—</div>
+            </div>
+
+            <div>
+              <div class="small muted">Selected Chapter</div>
+              <div id="selChapterName" style="font-weight:800">—</div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <div class="small muted">Open Editors</div>
+              <div class="mt-2 space-y-2">
+                <button id="openLectures" class="btn btn-ghost w-full"><i class="fa-solid fa-video mr-2"></i> Lectures</button>
+                <button id="openContent" class="btn btn-ghost w-full"><i class="fa-solid fa-file-lines mr-2"></i> Content</button>
+                <button id="openRevision" class="btn btn-ghost w-full"><i class="fa-solid fa-notes-medical mr-2"></i> Revision</button>
+                <button id="openQuestions" class="btn btn-ghost w-full"><i class="fa-solid fa-question mr-2"></i> Questions</button>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div>
+              <div class="small muted">Saved:</div>
+              <div id="lastSaved" class="muted">never</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <!-- FIREBASE + LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, setDoc, collection, getDocs, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { requirePermission } from "/admin/guard-v10.js";
+
+    // CONFIG - same as your other admin pages
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Cloudinary
+    const CLOUD_NAME = 'dkxuilgai';
+    const UPLOAD_PRESET = 'bcd_courses';
+    function openCloudinaryWidget(opts = {}, cb) {
+      const widget = cloudinary.createUploadWidget({
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        sources: ["local","url","camera"],
+        multiple: !!opts.multiple,
+        resourceType: opts.resourceType || 'image',
+        clientAllowedFormats: opts.clientAllowedFormats || undefined
+      }, (err, result) => {
+        if (!err && result && result.event === 'success') cb(result.info);
+        if (err) { console.error('Cloudinary error', err); Swal.fire('Upload error', err.message || 'Upload failed', 'error'); }
+      });
+      widget.open();
+    }
+
+    // STATE
+    let courseId = null;
+    let CONTENT = { subjects: {} };
+    let SELECTED_SUBJECT = null;
+    let SELECTED_CHAPTER = null; // chapter id (string id)
+    let saveLock = false;
+    let isDirty = false;
+
+    // Security / access helpers
+    let ALLOWED_SUBJECTS = null; // for teacher filtered access
+    let role = null;
+    let user = null;
+
+    // DOM refs (matching original ids & behavior)
+    const courseIdDisplay = document.getElementById('courseIdDisplay');
+    const subjectSelect = document.getElementById('subjectSelect');
+    const chapterSelect = document.getElementById('chapterSelect');
+
+    const conceptsList = document.getElementById('conceptsList');
+    const conceptTitle = document.getElementById('conceptTitle');
+    const conceptURL = document.getElementById('conceptURL');
+    const conceptThumb = document.getElementById('conceptThumb');
+    const uploadConceptBtn = document.getElementById('uploadConceptBtn');
+    const addConceptBtn = document.getElementById('addConceptBtn');
+
+    const materialsSections = document.getElementById('materialsSections');
+    const newSectionName = document.getElementById('newSectionName');
+    const createSectionBtn = document.getElementById('createSectionBtn');
+    const sectionSelect = document.getElementById('sectionSelect');
+    const pdfTitle = document.getElementById('pdfTitle');
+    const pdfURL = document.getElementById('pdfURL');
+    const uploadPDFBtn = document.getElementById('uploadPDFBtn');
+    const addPdfBtn = document.getElementById('addPdfBtn');
+
+    const studyList = document.getElementById('studyList');
+    const studyTitle = document.getElementById('studyTitle');
+    const studyURL = document.getElementById('studyURL');
+    const uploadStudyBtn = document.getElementById('uploadStudyBtn');
+    const addStudyBtn = document.getElementById('addStudyBtn');
+
+    const saveBtn = document.getElementById('saveBtn');
+
+    const selSubjectName = document.getElementById('selSubjectName');
+    const selChapterName = document.getElementById('selChapterName');
+    const lastSaved = document.getElementById('lastSaved');
+
+    const tabs = Array.from(document.querySelectorAll('.tab-card'));
+    const panels = Array.from(document.querySelectorAll('[data-panel]'));
+
+    // UTIL
+    function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+    function markDirty(){ isDirty = true; }
+    function getQueryParam(name){ const u = new URL(window.location.href); return u.searchParams.get(name); }
+    window.addEventListener('beforeunload', (e)=>{ if(isDirty){ e.preventDefault(); e.returnValue=''; } });
+
+    // TABS wiring (Style 3 cards)
+    function showPanel(name){
+      panels.forEach(p=> p.classList.toggle('hidden', p.dataset.panel !== name));
+      tabs.forEach(t=> t.classList.toggle('active', t.dataset.tab === name));
+    }
+    tabs.forEach(t=> t.addEventListener('click', ()=> showPanel(t.dataset.tab)));
+
+    // RENDER functions adapted from your original editor (keeps all logic)
+    function renderSubjectOptions(){
+      subjectSelect.innerHTML = '';
+      const allSubjects = CONTENT.subjects || {};
+      let keys = Object.keys(allSubjects);
+
+      // If teacher → filter based on assigned subject.teachers[]
+      if (role && !role.permissions?.manageSubjects && Array.isArray(ALLOWED_SUBJECTS)) {
+        keys = keys.filter(k => ALLOWED_SUBJECTS.includes(k));
+      }
+
+      keys.forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = allSubjects[k].name || 'Unnamed';
+        subjectSelect.appendChild(opt);
+      });
+
+      if (keys.length) {
+        if (!SELECTED_SUBJECT || !keys.includes(SELECTED_SUBJECT)) SELECTED_SUBJECT = keys[0];
+        subjectSelect.value = SELECTED_SUBJECT;
+      } else {
+        SELECTED_SUBJECT = null;
+      }
+
+      renderChapterOptions();
+    }
+
+    function renderChapterOptions(){
+      chapterSelect.innerHTML = '';
+      if(!SELECTED_SUBJECT) return;
+      const chapters = CONTENT.subjects[SELECTED_SUBJECT].chapters || [];
+      chapters.forEach(c=>{
+        const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.title || 'Untitled';
+        chapterSelect.appendChild(opt);
+      });
+      if(chapters.length){
+        if(!SELECTED_CHAPTER || !chapters.find(ch=>ch.id===SELECTED_CHAPTER)) SELECTED_CHAPTER = chapters[0].id;
+        chapterSelect.value = SELECTED_CHAPTER;
+      } else {
+        SELECTED_CHAPTER = null;
+      }
+      renderPanelLists();
+    }
+
+    function getCurrentChapter(){
+      if(!SELECTED_SUBJECT || !SELECTED_CHAPTER) return null;
+      return (CONTENT.subjects[SELECTED_SUBJECT].chapters || []).find(ch => ch.id === SELECTED_CHAPTER) || null;
+    }
+
+    // HTML escaping helpers to avoid template injection
+    function escapeHtml(str){ if(!str && str !== 0) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escapeHtmlAttr(str){ if(!str && str !== 0) return ''; return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+    function renderPanelLists(){
+      const ch = getCurrentChapter();
+      if (!ch.flashcards) ch.flashcards = [];
+      selSubjectName.textContent = SELECTED_SUBJECT ? (CONTENT.subjects[SELECTED_SUBJECT].name || '—') : '—';
+      selChapterName.textContent = ch ? (ch.title || '—') : '—';
+
+      // concepts
+      conceptsList.innerHTML = '';
+      if(!ch){ conceptsList.innerHTML = '<div class="small muted">Open a chapter to edit</div>'; return; }
+      (ch.concepts || []).forEach((c,i)=>{
+        const div = document.createElement('div'); div.className='list-item';
+        div.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center;flex:1">
+            <img src="${c.thumb||''}" class="thumb" onerror="this.style.display='none'"/>
+            <div style="flex:1">
+              <div style="font-weight:800">${escapeHtml(c.title||'Concept')}</div>
+              <div class="small muted">${escapeHtml(c.url||'')}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" data-i="${i}" data-action="editC">Edit</button>
+            <button class="btn btn-ghost" data-i="${i}" data-action="delC" style="color:#ef4444">Delete</button>
+          </div>
+        `;
+        conceptsList.appendChild(div);
+      });
+
+      // materials sections
+      materialsSections.innerHTML = '';
+      sectionSelect.innerHTML = '';
+      (ch.materialSections || []).forEach((s,si)=>{
+        const wrapper = document.createElement('div'); wrapper.style.marginBottom='8px';
+        const header = document.createElement('div'); header.className='flex'; header.style.justifyContent='space-between';
+        header.innerHTML = `<div><strong>${escapeHtml(s.name)}</strong> <div class="small muted">${s.pdfs?.length||0} pdf(s)</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" data-si="${si}" data-action="renameSection">Rename</button>
+            <button class="btn btn-ghost" data-si="${si}" data-action="delSection" style="color:#ef4444">Delete</button>
+          </div>`;
+        wrapper.appendChild(header);
+
+        // pdf list
+        const pdfList = document.createElement('div'); pdfList.style.marginTop='8px';
+        (s.pdfs || []).forEach((p,pi)=>{
+          const row = document.createElement('div'); row.className='list-item';
+          row.innerHTML = `<div style="display:flex;gap:12px;align-items:center;flex:1"><i class="fa-solid fa-file-pdf" style="font-size:20px"></i>
+            <div style="flex:1"><div style="
+  font-weight:800;
+  max-width:240px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+" title="${escapeHtmlAttr(p.title||'PDF')}">
+  ${escapeHtml(p.title||'PDF')}
+</div><div class="small muted" style="
+  max-width:240px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+" title="${escapeHtmlAttr(p.url||'')}">
+  ${escapeHtml(p.url||'')}
+</div>
+</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" data-si="${si}" data-pi="${pi}" data-action="editPdf">Edit</button>
+              <button class="btn btn-ghost" data-si="${si}" data-pi="${pi}" data-action="delPdf" style="color:#ef4444">Delete</button>
+            </div>`;
+          pdfList.appendChild(row);
+        });
+        wrapper.appendChild(pdfList);
+        materialsSections.appendChild(wrapper);
+
+        // add to section select
+        const opt = document.createElement('option'); opt.value = si; opt.textContent = s.name; sectionSelect.appendChild(opt);
+      });
+
+      // study
+      studyList.innerHTML = '';
+      (ch.study || []).forEach((s,i)=>{
+        const div = document.createElement('div'); div.className='list-item';
+        div.innerHTML = `<div style="flex:1"><div style="font-weight:800">${escapeHtml(s.title)}</div><div class="small muted">${escapeHtml(s.url||'')}</div></div>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost" data-i="${i}" data-action="editSt">Edit</button><button class="btn btn-ghost" data-i="${i}" data-action="delSt" style="color:#ef4444">Delete</button></div>`;
+        studyList.appendChild(div);
+      });
+
+      renderFlashcards(ch);
+
+      attachListHandlers();
+    }
+
+    // attachListHandlers: same logic as original
+    function attachListHandlers(){
+      // concepts
+      conceptsList.querySelectorAll('button').forEach(b=>{
+        b.onclick = async ()=> {
+          const i = +b.dataset.i; const action = b.dataset.action;
+          const ch = getCurrentChapter();
+          if(!ch) return;
+          if(action === 'editC'){
+            const c = ch.concepts[i];
+            const res = await Swal.fire({
+              title:'Edit Concept',
+              html: `<input id="swT" class="swal2-input" value="${escapeHtmlAttr(c.title||'')}" /><input id="swU" class="swal2-input" value="${escapeHtmlAttr(c.url||'')}" /><input id="swThumb" class="swal2-input" value="${escapeHtmlAttr(c.thumb||'')}" />`,
+              showCancelButton:true
+            });
+            if(res.isConfirmed){
+              c.title = document.getElementById('swT').value;
+              c.url = document.getElementById('swU').value;
+              c.thumb = document.getElementById('swThumb').value;
+              renderPanelLists(); markDirty();
+            }
+          } else if(action === 'delC'){
+            ch.concepts.splice(i,1); renderPanelLists(); markDirty();
+          }
+        };
+      });
+
+      // materials sections
+      materialsSections.querySelectorAll('button').forEach(b=>{
+        b.onclick = async ()=>{
+          const ch = getCurrentChapter();
+          const si = b.dataset.si ? +b.dataset.si : null;
+          const pi = b.dataset.pi ? +b.dataset.pi : null;
+          const action = b.dataset.action;
+          if(action === 'renameSection'){
+            const { value } = await Swal.fire({ title:'Rename section', input:'text', inputValue: ch.materialSections[si].name, showCancelButton:true });
+            if(value) { ch.materialSections[si].name = value; renderPanelLists(); markDirty(); }
+          } else if(action === 'delSection'){
+            const r = await Swal.fire({ title:'Delete section?', text:'This removes the section and its PDFs', icon:'warning', showCancelButton:true });
+            if(r.isConfirmed){ ch.materialSections.splice(si,1); renderPanelLists(); markDirty(); }
+          } else if(action === 'editPdf'){
+            const pdf = ch.materialSections[si].pdfs[pi];
+            const res = await Swal.fire({ title:'Edit PDF', html:`<input id="swPT" class="swal2-input" value="${escapeHtmlAttr(pdf.title||'')}" /><input id="swPU" class="swal2-input" value="${escapeHtmlAttr(pdf.url||'')}" />`, showCancelButton:true });
+            if(res.isConfirmed){ pdf.title = document.getElementById('swPT').value; pdf.url = document.getElementById('swPU').value; renderPanelLists(); markDirty(); }
+          } else if(action === 'delPdf'){
+            ch.materialSections[si].pdfs.splice(pi,1); renderPanelLists(); markDirty();
+          }
+        };
+      });
+
+      // study
+      studyList.querySelectorAll('button').forEach(b=>{
+        b.onclick = async ()=>{
+          const i = +b.dataset.i; const action = b.dataset.action;
+          const ch = getCurrentChapter();
+          if(action === 'editSt'){
+            const s = ch.study[i];
+            const res = await Swal.fire({ title:'Edit module', html:`<input id="swT" class="swal2-input" value="${escapeHtmlAttr(s.title||'')}" /><input id="swU" class="swal2-input" value="${escapeHtmlAttr(s.url||'')}" />`, showCancelButton:true });
+            if(res.isConfirmed){ s.title=document.getElementById('swT').value; s.url=document.getElementById('swU').value; renderPanelLists(); markDirty(); }
+          } else if(action === 'delSt'){ ch.study.splice(i,1); renderPanelLists(); markDirty(); }
+        };
+      });
+    }
+
+    // CRUD helpers
+    function ensureContent(){
+      if(!CONTENT) CONTENT = { subjects: {} };
+    }
+
+    function createChapterLocal(title){
+      if(!SELECTED_SUBJECT) return Swal.fire('No subject','Select a subject first','warning');
+      const ch = { id: uid('ch'), title: title || 'Untitled', concepts:[], materialSections:[], study:[], flashcards: [] };
+      CONTENT.subjects[SELECTED_SUBJECT].chapters.push(ch);
+      SELECTED_CHAPTER = ch.id;
+      renderChapterOptions(); markDirty(); return ch;
+    }
+
+    // event wiring
+    subjectSelect.onchange = ()=> {
+      SELECTED_SUBJECT = subjectSelect.value;
+      renderChapterOptions();
+    };
+    chapterSelect.onchange = ()=> {
+      SELECTED_CHAPTER = chapterSelect.value;
+      renderPanelLists();
+    };
+
+    // CONCEPTS
+    uploadConceptBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'video' }, info=>{ conceptURL.value = info.secure_url; Swal.fire('Uploaded','Video uploaded','success'); });
+    addConceptBtn.onclick = ()=> {
+      const ch = getCurrentChapter(); if(!ch) return Swal.fire('Open chapter','Select a chapter first','warning');
+      ch.concepts = ch.concepts || [];
+      ch.concepts.push({ id: uid('con'), title: conceptTitle.value.trim() || 'Concept', url: conceptURL.value.trim() || '', thumb: conceptThumb.value.trim() || '' });
+      conceptTitle.value=''; conceptURL.value=''; conceptThumb.value=''; renderPanelLists(); markDirty();
+    };
+
+    // MATERIALS -> sections + pdfs
+    createSectionBtn.onclick = ()=> {
+      if(!SELECTED_SUBJECT || !SELECTED_CHAPTER) return Swal.fire('Open chapter','Select chapter first','warning');
+      const ch = getCurrentChapter();
+      ch.materialSections = ch.materialSections || [];
+      if(!newSectionName.value.trim()) return Swal.fire('Enter name','Enter a section name','warning');
+      ch.materialSections.push({ id: uid('sec'), name: newSectionName.value.trim(), pdfs: [] });
+      newSectionName.value=''; renderPanelLists(); markDirty();
+    };
+
+    uploadPDFBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'raw' }, info=>{ pdfURL.value = info.secure_url; Swal.fire('Uploaded','PDF uploaded','success'); });
+    addPdfBtn.onclick = ()=> {
+      const ch = getCurrentChapter(); if(!ch) return Swal.fire('Open chapter','Select a chapter first','warning');
+      const idx = Number(sectionSelect.value);
+      if(isNaN(idx)) return Swal.fire('Select section','Choose a section first','warning');
+      const sec = ch.materialSections[idx];
+      sec.pdfs = sec.pdfs || [];
+      sec.pdfs.push({ id: uid('pdf'), title: pdfTitle.value.trim() || 'PDF', url: pdfURL.value.trim() || '' });
+      pdfTitle.value=''; pdfURL.value=''; renderPanelLists(); markDirty();
+    };
+
+    // STUDY MODULES
+    uploadStudyBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'raw' }, info=>{ studyURL.value = info.secure_url; Swal.fire('Uploaded','PDF uploaded','success'); });
+    addStudyBtn.onclick = ()=> {
+      const ch = getCurrentChapter(); if(!ch) return Swal.fire('Open chapter','Select a chapter first','warning');
+      ch.study = ch.study || [];
+      ch.study.push({ id: uid('st'), title: studyTitle.value.trim() || 'Module', url: studyURL.value.trim() || '' });
+      studyTitle.value=''; studyURL.value=''; renderPanelLists(); markDirty();
+    };
+    // SAVE content to Firestore (under courses/<id>.content)
+    saveBtn.onclick = saveContent;
+    async function saveContent(){
+      if(!courseId) return Swal.fire('Missing','Open page with ?id=<courseId>','error');
+      if(saveLock) return;
+      saveLock = true;
+      try{
+        const payload = { content: CONTENT, updatedAt: serverTimestamp() };
+        try{
+          await updateDoc(doc(db,'courses',courseId), payload);
+        } catch (uErr) {
+          await setDoc(doc(db,'courses',courseId), payload, { merge: true });
+        }
+        lastSaved.textContent = new Date().toLocaleString();
+        isDirty = false;
+        Swal.fire({ icon:'success', title:'Saved', text:'Content saved', timer:1200, showConfirmButton:false });
+      } catch(err){ console.error('save err', err); Swal.fire('Error','Save failed','error'); }
+      saveLock = false;
+    }
+
+    // load course content
+    async function loadCourseAndContent(id){
+      try{
+        const snap = await getDoc(doc(db,'courses',id));
+        if(!snap.exists()) return Swal.fire('Not found','Course not found','error');
+        const data = snap.data();
+        CONTENT = data.content || { subjects:{} };
+
+// ⭐ FIX: Apply subject & chapter from URL if provided
+const urlSubject = getQueryParam("subject");
+const urlChapter = getQueryParam("chapter");
+
+if (urlSubject && CONTENT.subjects[urlSubject]) {
+  SELECTED_SUBJECT = urlSubject;
+
+  const chapters = CONTENT.subjects[urlSubject].chapters || [];
+  if (urlChapter && chapters.find(ch => ch.id === urlChapter)) {
+    SELECTED_CHAPTER = urlChapter;
+  }
+}
+
+        // Filter subject access for teachers (role WITHOUT manageSubjects)
+        if (role && !role.permissions?.manageSubjects) {
+          ALLOWED_SUBJECTS = [];
+
+          const allSubjects = CONTENT.subjects || {};
+
+          for (const sid in allSubjects) {
+            const subj = allSubjects[sid];
+
+            const teacherList = subj.teachers || [];
+            const isAssigned = teacherList.some(t => t.uid === user.uid);
+
+            if (isAssigned) ALLOWED_SUBJECTS.push(sid);
+          }
+
+          // If teacher has no subjects → block access
+          if (ALLOWED_SUBJECTS.length === 0) {
+            return Swal.fire("No Access", "You are not assigned to any subjects in this course.", "error");
+          }
+        }
+        // if no subjects -> show message
+        if(!CONTENT.subjects) CONTENT.subjects = {};
+        // fill selects
+        courseIdDisplay.textContent = id;
+        courseId = id;
+
+        // normalize subjects shape: array -> map
+        if(Array.isArray(CONTENT.subjects)){
+          const map = {};
+          CONTENT.subjects.forEach(s=> { map[s.id || uid('s')] = s; });
+          CONTENT.subjects = map;
+        }
+
+        // if no subject exists => create a default "General" subject
+        if(Object.keys(CONTENT.subjects).length === 0){
+          const sid = uid('subj');
+          CONTENT.subjects[sid] = { id: sid, name: 'General', chapters: [] };
+        }
+
+        // set SELECTED_SUBJECT to first
+        SELECTED_SUBJECT = Object.keys(CONTENT.subjects)[0];
+        // SELECTED_CHAPTER if any
+        const chs = CONTENT.subjects[SELECTED_SUBJECT].chapters || [];
+        SELECTED_CHAPTER = chs.length ? chs[0].id : null;
+
+        renderSubjectOptions();
+        renderPanelLists();
+      } catch(err){ console.error('load err', err); Swal.fire('Error','Failed to load course','error'); }
+    }
+
+    // Small UI: back arrow
+    document.getElementById('backArrow').onclick = ()=> {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = 'admin-subjects.html';
+    };
+
+    // Open editors from right panel
+    const openLectures = document.getElementById('openLectures');
+    const openContent = document.getElementById('openContent');
+    const openRevision = document.getElementById('openRevision');
+    const openQuestions = document.getElementById('openQuestions');
+
+    openLectures.onclick = ()=> { Swal.fire('Open chapter','Please open a chapter first','info'); };
+    openContent.onclick = ()=> { Swal.fire('Open chapter','Please open a chapter first','info'); };
+    openRevision.onclick = ()=> { Swal.fire('Open chapter','Please open a chapter first','info'); };
+    openQuestions.onclick = ()=> { Swal.fire('Open chapter','Please open a chapter first','info'); };
+
+    // LOAD flow with permission guard
+    const perm = await requirePermission("manageSubjects");
+    // normalize shape returned from guard
+    user = perm.user || perm?.currentUser || null;
+    role = perm.role || perm?.userRole || null;
+
+    // profile pic
+    const profilePic = document.getElementById("profilePic");
+    const defaultPic = "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+    profilePic.src = user?.photoURL || role?.photoURL || defaultPic;
+    profilePic.onclick = ()=> window.location.href = 'profile.html';
+
+    const id = getQueryParam("id");
+    if (!id) {
+      Swal.fire("Missing ID", "Open this page with ?id=<courseId>", "warning");
+    } else {
+      await loadCourseAndContent(id);
+    }
+
+    // keyboard save
+    window.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveContent(); } });
+function renderFlashcards(ch) {
+  const list = document.getElementById("flashcardsList");
+  list.innerHTML = "";
+
+  if (!ch.flashcards) ch.flashcards = [];
+
+  ch.flashcards.forEach((fc, i) => {
+    const wrap = document.createElement("div");
+    wrap.className = "panel mb-4";
+    wrap.style.padding = "16px";
+
+    wrap.innerHTML = `
+      <div style="font-weight:800;margin-bottom:10px;">Card ${i + 1}</div>
+
+      <div class="small muted">Front (Question)</div>
+      <textarea class="input flash-input" data-i="${i}" data-field="front" style="min-height:60px;">${escapeHtml(fc.front || "")}</textarea>
+
+      <div class="small muted mt-3">Back (Answer)</div>
+      <textarea class="input flash-input" data-i="${i}" data-field="back" style="min-height:60px;">${escapeHtml(fc.back || "")}</textarea>
+
+      <div class="small muted mt-3">Hint (optional)</div>
+      <textarea class="input flash-input" data-i="${i}" data-field="hint" style="min-height:40px;">${escapeHtml(fc.hint || "")}</textarea>
+
+      <div class="small muted mt-3">Image (optional)</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+        ${fc.image ? `<img src="${fc.image}" class="thumb" style="width:56px;height:56px;border-radius:8px;">` : ""}
+        <button class="btn btn-ghost" data-i="${i}" data-action="uploadImg">
+          <i class="fa-solid fa-upload"></i> Upload
+        </button>
+      </div>
+
+      <div style="text-align:right;margin-top:12px;">
+        <button class="btn btn-ghost" data-action="delete" data-i="${i}" style="color:#ef4444;">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+      </div>
+    `;
+
+    list.appendChild(wrap);
+  });
+
+  attachSimpleFlashcardHandlers(ch);
+}
+
+function attachSimpleFlashcardHandlers(ch) {
+  document.querySelectorAll(".flash-input").forEach(inp => {
+    inp.oninput = () => {
+      const i = +inp.dataset.i;
+      const field = inp.dataset.field;
+      ch.flashcards[i][field] = inp.value;
+      markDirty();
+    };
+  });
+
+  document.querySelectorAll("[data-action='uploadImg']").forEach(btn => {
+    btn.onclick = () => {
+      const i = +btn.dataset.i;
+      openCloudinaryWidget({}, info => {
+        ch.flashcards[i].image = info.secure_url;
+        markDirty();
+        renderPanelLists();
+      });
+    };
+  });
+
+  document.querySelectorAll("[data-action='delete']").forEach(btn => {
+    btn.onclick = () => {
+      const i = +btn.dataset.i;
+      ch.flashcards.splice(i, 1);
+      markDirty();
+      renderPanelLists();
+    };
+  });
+}
+
+document.getElementById("addFlashcardBtn").onclick = () => {
+  const ch = getCurrentChapter();
+  if (!ch) return Swal.fire("Select Chapter", "Open a chapter first", "warning");
+
+  if (!ch.flashcards) ch.flashcards = [];
+
+  ch.flashcards.push({ front: "", back: "", hint: "", image: "" });
+  markDirty();
+  renderPanelLists();
+};
+
+  </script>
+</body>
+</html>

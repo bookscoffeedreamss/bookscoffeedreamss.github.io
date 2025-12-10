@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Staff Profile • BCD</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root{
+      --bg:#f6f8ff;
+      --card:#ffffff;
+    }
+    body{background:var(--bg);margin:0;font-family:Inter}
+    .container{max-width:700px;margin:30px auto;padding:20px}
+
+    .card{
+      background:var(--card);padding:20px;border-radius:14px;
+      box-shadow:0 12px 35px rgba(0,0,0,0.06);
+      border:1px solid #eef2ff;
+    }
+    .title{font-size:26px;font-weight:800}
+    .label{font-size:14px;font-weight:600;margin-bottom:4px;margin-top:12px}
+    .input{
+      width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;
+      outline:none;font-size:15px;margin-bottom:6px;
+    }
+    .btn-primary{
+      padding:12px 20px;border-radius:10px;font-weight:700;cursor:pointer;border:none;
+      background:linear-gradient(90deg,#6542F4,#9A4DFF);color:white;margin-top:16px;width:100%;
+    }
+    .profile-img{
+      width:90px;height:90px;border-radius:12px;object-fit:cover;border:1px solid #ddd;
+      display:block;margin-bottom:14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="card">
+    <div class="title">My Staff Profile</div>
+
+    <div class="mt-4">
+
+      <img id="profilePreview" class="profile-img" src="">
+
+      <label class="label">Full Name</label>
+      <input id="name" class="input">
+
+      <label class="label">School / College</label>
+      <input id="school" class="input">
+
+      <label class="label">Experience</label>
+      <input id="experience" class="input" placeholder="e.g., 4 years teaching JEE">
+
+      <label class="label">Subjects (comma separated)</label>
+      <input id="subjects" class="input">
+
+      <label class="label">Short Bio</label>
+      <textarea id="bio" class="input" rows="4"></textarea>
+
+      <label class="label">Social Links</label>
+      <input id="insta" class="input" placeholder="Instagram URL">
+      <input id="yt" class="input" placeholder="YouTube URL">
+      <input id="linkedin" class="input" placeholder="LinkedIn URL">
+
+      <button id="saveBtn" class="btn-primary">Save My Profile</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { requireAnyPermission } from "/admin/guard-v10.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+    authDomain: "bcd-discord.firebaseapp.com",
+    projectId: "bcd-discord",
+    storageBucket: "bcd-discord.appspot.com",
+    messagingSenderId: "278895155371",
+    appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const nameInput = document.getElementById("name");
+  const schoolInput = document.getElementById("school");
+  const expInput = document.getElementById("experience");
+  const subjectsInput = document.getElementById("subjects");
+  const bioInput = document.getElementById("bio");
+  const instaInput = document.getElementById("insta");
+  const ytInput = document.getElementById("yt");
+  const linkedinInput = document.getElementById("linkedin");
+  const saveBtn = document.getElementById("saveBtn");
+  const profilePreview = document.getElementById("profilePreview");
+
+  let currentUser = null;
+
+  // REQUIRE: User must have ANY permission (manageContent, manageDoubts, manageSubjects, etc.)
+const { user, role, permissions } = await requireAnyPermission();
+currentUser = user;
+
+// Load user profile data
+const userSnap = await getDoc(doc(db, "users", user.uid));
+const userData = userSnap.exists() ? userSnap.data() : {};
+
+// Load staff doc
+const staffSnap = await getDoc(doc(db, "staff", user.uid));
+const s = staffSnap.exists() ? staffSnap.data() : {};
+
+profilePreview.src =
+  userData.photoURL ||
+  userData.profileURL ||
+  s.photoURL ||
+  "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+
+nameInput.value = s.name || userData.name || "";
+schoolInput.value = s.school || "";
+expInput.value = s.experience || "";
+subjectsInput.value = (s.subjects || []).join(", ");
+bioInput.value = s.bio || "";
+instaInput.value = s.socials?.instagram || "";
+ytInput.value = s.socials?.youtube || "";
+linkedinInput.value = s.socials?.linkedin || "";
+
+  // -------------------------
+  // SAVE MY OWN PROFILE
+  // -------------------------
+  saveBtn.onclick = async () => {
+    const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+    const u = userSnap.exists() ? userSnap.data() : {};
+
+    const photo =
+      u.photoURL ||
+      u.profileURL ||
+      "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+
+    const data = {
+      uid: currentUser.uid,
+      name: nameInput.value.trim() || u.name || "",
+      photoURL: photo,
+      school: schoolInput.value.trim(),
+      experience: expInput.value.trim(),
+      subjects: subjectsInput.value.split(",").map(s => s.trim()).filter(Boolean),
+      bio: bioInput.value.trim(),
+      socials: {
+        instagram: instaInput.value.trim(),
+        youtube: ytInput.value.trim(),
+        linkedin: linkedinInput.value.trim()
+      },
+      updatedAt: new Date()
+    };
+
+    await setDoc(doc(db, "staff", currentUser.uid), data);
+
+    Swal.fire("Saved!", "Your profile has been updated.", "success");
+  };
+</script>
+
+</body>
+</html>

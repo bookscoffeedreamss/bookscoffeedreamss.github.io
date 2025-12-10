@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BCD • Dashboard (Green + Blue)</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FONT: INTER -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FONT AWESOME -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+  :root{
+    --blue: #4C8CFF;
+    --green: #2ECC71;
+    --grad: linear-gradient(90deg,var(--blue),var(--green));
+    --bg: #0f1216;
+    --panel: #15181b;
+    --muted: #9aa3ad;
+    --sidebar-wide: 260px;
+    --sidebar-narrow: 76px;
+  }
+
+  html {
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto;
+    background:var(--bg);
+    color:#e6eef8;
+  }
+
+  /* FRAME */
+  .app-header {
+    height:72px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border-bottom:1px solid rgba(255,255,255,0.03);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; position:sticky; top:0; z-index:40;
+  }
+
+  .app-sidebar {
+    background:var(--panel);
+    border-right:1px solid rgba(255,255,255,0.03);
+    height:100vh;
+    position:sticky; top:0;
+    padding:22px;
+    transition:width .22s ease, padding .22s ease;
+  }
+
+  body:not(.collapsed-mode) .app-sidebar { width:var(--sidebar-wide); }
+  body.collapsed-mode .app-sidebar { width:var(--sidebar-narrow); padding-left:8px; padding-right:8px; }
+
+  /* NAV ITEMS */
+  .nav-item {
+    display:flex; align-items:center;
+    gap:12px; padding:10px;
+    border-radius:12px;
+    transition:background .18s ease, transform .18s ease;
+    width:100%; cursor:pointer;
+  }
+
+  .nav-item:hover { background:rgba(255,255,255,0.04); }
+
+  .nav-item .box {
+    width:48px; height:48px; border-radius:12px;
+    background:rgba(255,255,255,0.03);
+    display:flex; align-items:center; justify-content:center;
+    transition:0.2s;
+  }
+
+  body.collapsed-mode .nav-label { display:none !important; }
+
+  /* ACTIVE EXPANDED */
+  .nav-item.active.expanded {
+    background: linear-gradient(90deg, rgba(76,140,255,0.08), rgba(46,204,113,0.08));
+  }
+
+  .nav-item.active.expanded .nav-label {
+    font-weight:600; color:white;
+  }
+
+  /* COLLAPSED PILL */
+  .icon-pill {
+    width:48px; height:48px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    transition: all .18s ease;
+  }
+  .icon-pill.active {
+    background:var(--grad);
+    color:white;
+    box-shadow:0 10px 30px rgba(46,204,113,0.20), 0 4px 10px rgba(76,140,255,0.18);
+  }
+
+  /* TOOLTIP */
+  .tooltip {
+    position:absolute; left: calc(100% + 12px);
+    top:50%; transform:translateY(-50%);
+    background:#0b0d0f; padding:8px 10px;
+    border-radius:8px; font-size:13px;
+    display:none; white-space:nowrap;
+  }
+  body.collapsed-mode .nav-item:hover .tooltip { display:block; }
+
+  /* Quick Actions highlight bottom */
+  .quick-card-highlight {
+    position: relative;
+    overflow: hidden;
+  }
+  .quick-card-highlight::after {
+    content:"";
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:32%;
+    background:var(--blue);
+    opacity:0.30;
+    filter:blur(22px);
+  }
+
+  .rounded-panel {
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    border:1px solid rgba(255,255,255,0.02);
+    padding:18px;
+  }
+
+  .muted { color:var(--muted); }
+</style>
+</head>
+
+
+
+<body>
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="app-sidebar flex flex-col gap-6">
+
+    <div class="hidden xl:block text-white font-extrabold text-xl">
+      Books Coffee Dreams
+    </div>
+
+    <!-- NAV -->
+    <nav class="flex-1">
+      <ul class="space-y-2">
+
+        <!-- Explore -->
+        <li class="relative">
+          <button class="nav-item active expanded" data-key="explore">
+            <div class="box">
+              <i class="fa-solid fa-house text-[var(--blue)] text-xl"></i>
+            </div>
+            <div class="hidden xl:block nav-label">Explore</div>
+            <div class="tooltip">Explore</div>
+
+            <div class="absolute icon-only left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style="display:none;">
+              <div id="pill-explore" class="icon-pill active">
+                <i class="fa-solid fa-house text-white text-lg"></i>
+              </div>
+            </div>
+          </button>
+        </li>
+
+        <!-- Study -->
+        <li class="relative">
+          <button class="nav-item" data-key="study">
+            <div class="box">
+              <i class="fa-solid fa-book text-white text-xl"></i>
+            </div>
+            <div class="hidden xl:block nav-label">Study</div>
+            <div class="tooltip">Study</div>
+
+            <div class="absolute icon-only left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style="display:none;">
+              <div id="pill-study" class="icon-pill">
+                <i class="fa-solid fa-book text-white text-lg"></i>
+              </div>
+            </div>
+          </button>
+        </li>
+
+        <!-- Doubts -->
+        <li class="relative">
+          <button class="nav-item" data-key="doubts">
+            <div class="box">
+              <i class="fa-solid fa-question text-white text-xl"></i>
+            </div>
+            <div class="hidden xl:block nav-label">Doubts</div>
+            <div class="tooltip">Doubts</div>
+
+            <div class="absolute icon-only left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style="display:none;">
+              <div id="pill-doubts" class="icon-pill">
+                <i class="fa-solid fa-question text-white text-lg"></i>
+              </div>
+            </div>
+          </button>
+        </li>
+
+        <!-- Tests -->
+        <li class="relative">
+          <button class="nav-item" data-key="tests">
+            <div class="box">
+              <i class="fa-solid fa-file text-white text-xl"></i>
+            </div>
+            <div class="hidden xl:block nav-label">Tests</div>
+            <div class="tooltip">Tests</div>
+
+            <div class="absolute icon-only left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style="display:none;">
+              <div id="pill-tests" class="icon-pill">
+                <i class="fa-solid fa-file text-white text-lg"></i>
+              </div>
+            </div>
+          </button>
+        </li>
+
+      </ul>
+    </nav>
+  </aside>
+
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div></div>
+
+      <div class="flex items-center gap-4">
+        <button class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 relative">
+          <i class="fa-solid fa-bell text-lg"></i>
+          <span class="absolute -top-1 -right-1 bg-red-500 text-[10px] w-4 h-4 rounded-full flex items-center justify-center">1</span>
+        </button>
+
+        <div class="flex flex-col items-end">
+          <div class="flex gap-2">
+            <span class="px-3 py-1 rounded-md bg-[#1a1d1f] text-xs">11th</span>
+            <span class="px-3 py-1 rounded-md bg-[#1a1d1f] text-xs">JEE Adv.</span>
+          </div>
+          <a class="text-[var(--blue)] text-sm mt-1" href="#">Change course</a>
+        </div>
+
+        <button class="w-10 h-10 rounded-full overflow-hidden hover:border-[var(--blue)] border transition">
+          <img src="https://i.pravatar.cc/40?u=anshuman" class="w-full h-full object-cover">
+        </button>
+      </div>
+    </header>
+
+
+
+    <!-- CONTENT -->
+    <main class="p-6">
+
+      <div class="rounded-panel">
+        <h1 class="text-2xl font-extrabold">Welcome to BCD</h1>
+        <p class="muted mt-2">Your dashboard is ready.</p>
+      </div>
+
+
+      <!-- QUICK ACTIONS (Allen Style) -->
+      <div class="mt-10">
+        <h2 class="text-2xl font-bold mb-6">Quick Actions</h2>
+
+        <div class="flex flex-wrap gap-10">
+
+          <!-- Revision Notes -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        group-hover:border-[var(--blue)] transition">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/revision%20notes.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">Revision Notes</span>
+          </div>
+
+          <!-- Custom Practice -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        group-hover:border-[var(--blue)] transition">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/custom%20practice.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">Custom Practice</span>
+          </div>
+
+          <!-- Improvement Book -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        group-hover:border-[var(--green)] transition">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/improvement%20book.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">Improvement Book</span>
+          </div>
+
+          <!-- Flashcards -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        group-hover:border-orange-400 transition">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/flash-card.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">Flashcards</span>
+          </div>
+
+          <!-- Topic Booster -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        relative group-hover:border-[var(--blue)] transition">
+
+              <span class="absolute top-2 bg-blue-600 text-[11px] px-2 py-[2px] rounded-md">
+                NEW
+              </span>
+
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/topic%20booster.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">Topic Booster</span>
+          </div>
+
+          <!-- PYQ Zone -->
+          <div class="flex flex-col items-center cursor-pointer group">
+            <div class="quick-card-highlight w-28 h-28 rounded-2xl bg-[#1a1d1f] 
+                        flex items-center justify-center border border-white/10 
+                        group-hover:border-blue-300 transition">
+              <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/pyq.png?raw=true"
+                   class="w-14 h-14">
+            </div>
+            <span class="mt-3 text-sm font-medium">PYQ Zone</span>
+          </div>
+
+        </div>
+      </div>
+
+
+
+
+    </main>
+
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const COLLAPSE_AT = 1280;
+  const body = document.body;
+  const navItems = document.querySelectorAll('.nav-item');
+
+  function autoCollapse() {
+    if (window.innerWidth < COLLAPSE_AT) body.classList.add("collapsed-mode");
+    else body.classList.remove("collapsed-mode");
+    updateNavUI();
+  }
+
+  window.addEventListener("load", autoCollapse);
+  window.addEventListener("resize", autoCollapse);
+
+  function clearActive() {
+    navItems.forEach(n=>{
+      n.classList.remove("active","expanded");
+      const pill=n.querySelector(".icon-pill");
+      if(pill) pill.classList.remove("active");
+    });
+  }
+
+  navItems.forEach((btn,i)=>{
+    if(i===0) btn.classList.add("active");
+    btn.addEventListener("click",()=>{
+      clearActive();
+      btn.classList.add("active");
+      updateNavUI();
+    });
+  });
+
+  function updateNavUI(){
+    const collapsed = body.classList.contains("collapsed-mode");
+
+    navItems.forEach(btn=>{
+      const key = btn.getAttribute("data-key");
+      const pill = document.getElementById("pill-"+key);
+
+      if(!collapsed){
+        btn.classList.add("expanded");
+        btn.style.background = btn.classList.contains("active")
+          ? "linear-gradient(90deg, rgba(76,140,255,0.08), rgba(46,204,113,0.08))"
+          : "transparent";
+        if(pill) pill.style.display="none";
+
+      } else {
+        btn.classList.remove("expanded");
+        btn.style.background = "transparent";
+
+        if(pill) pill.style.display="block";
+
+        if(btn.classList.contains("active")) pill.classList.add("active");
+        else pill.classList.remove("active");
+      }
+    });
+  }
+
+  updateNavUI();
+})();
+</script>
+
+</body>
+</html>

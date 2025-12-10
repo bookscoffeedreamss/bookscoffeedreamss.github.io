@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Community | Books Coffee and Dreams</title>
+
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Particles (optional visual) -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Outfit', sans-serif; background: linear-gradient(135deg,#f3e8ff,#ede9fe); min-height:100vh; color:#111827; }
+    .white-card { background:#fff; border-radius:14px; padding:16px; box-shadow:0 10px 30px rgba(2,6,23,0.06); border:1px solid rgba(0,0,0,0.04); }
+    .tab-btn{ padding:8px 14px; cursor:pointer; border-radius:999px; }
+    .tab-btn.active{ color:#fff; background:linear-gradient(90deg,#a855f7,#ec4899); box-shadow:0 8px 22px rgba(168,85,247,0.12); }
+    .tab-content.hidden{ display:none; }
+    .reaction-btn{ cursor:pointer; padding:6px 8px; border-radius:999px; display:inline-flex; gap:8px; align-items:center; border:1px solid transparent; font-weight:600; }
+    .reaction-btn.small { padding:4px 6px; font-size:13px; }
+    .reaction-btn.reacted { background:#eef2ff; border-color:#c7d2fe; }
+    .small-muted{ font-size:12px; color:#6b7280; }
+    .mention { background: linear-gradient(90deg,#e9d5ff,#fce7f3); padding:2px 6px; border-radius:6px; color:#5b21b6; font-weight:600; }
+    .admin-actions { display:flex; gap:8px; margin-left:auto; }
+    .file-preview { max-width:200px; max-height:140px; border-radius:8px; object-fit:cover; }
+    .avatar { width:36px; height:36px; border-radius:999px; object-fit:cover; }
+    .message .meta { font-size:12px; color:#6b7280; }
+    .composer { display:flex; gap:8px; align-items:center; }
+    textarea { resize:vertical; min-height:64px; }
+    .hidden-by-admin { opacity: 0.5; font-style: italic; } /* rarely used */
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- HEADER -->
+  <header id="mainHeader" class="fixed w-full top-0 bg-white/30 backdrop-blur-md z-50 border-b">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-fuchsia-500">Books Coffee Dreams</h1>
+      <div class="flex items-center gap-3">
+        <img id="headerPhoto" class="hidden w-9 h-9 rounded-full border-2 border-purple-500 cursor-pointer" onclick="location.href='profile.html'">
+        <button id="loginBtn" onclick="location.href='login.html'" class="hidden bg-purple-600 text-white px-3 py-1 rounded-full">Login</button>
+      </div>
+    </div>
+  </header>
+
+  <div style="height:72px"></div>
+
+  <main class="max-w-7xl mx-auto px-6 py-6">
+
+    <section class="text-center mb-6">
+      <h2 class="text-4xl font-extrabold">🌐 Community Hub</h2>
+      <p class="text-gray-600">Chat, post, react and collaborate with the community.</p>
+    </section>
+
+    <!-- Tabs -->
+    <section class="mb-6 flex gap-3 items-center">
+      <button class="tab-btn active" data-tab="chatTab">💬 Chat</button>
+      <button class="tab-btn" data-tab="postsTab">📝 Posts</button>
+      <button class="tab-btn" data-tab="annTab">📣 Announcements</button>
+      <div class="ml-auto small-muted">Signed in as <span id="signedName">Guest</span></div>
+    </section>
+
+    <!-- Chat / Posts / Announcements containers -->
+    <div id="chatTab" class="tab-content">
+      <div class="grid lg:grid-cols-4 gap-6">
+        <div class="lg:col-span-3">
+          <div id="chatMessages" class="white-card h-[520px] overflow-y-auto mb-3"></div>
+
+          <!-- typing / file upload / input -->
+          <div class="composer">
+            <input id="chatInput" class="flex-1 px-4 py-2 rounded-lg border" placeholder="Say hi — use @ to mention someone..." />
+            <input id="chatFile" type="file" class="hidden" />
+            <button id="attachBtn" class="px-3 py-2 bg-gray-100 rounded-lg small-muted">📎</button>
+            <button id="sendChatBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg">Send</button>
+          </div>
+
+          <div class="mt-2 small-muted"><span id="typingIndicator"></span></div>
+        </div>
+
+        <aside class="white-card">
+          <h4 class="font-bold mb-2">Community</h4>
+          <div class="mb-3">
+            <p class="small-muted">Online <span id="onlineCount">0</span></p>
+            <div id="onlineList" class="mt-2 space-y-2"></div>
+          </div>
+
+          <div>
+            <p class="small-muted">Shortcuts</p>
+            <button id="focusChat" class="mt-2 px-3 py-2 rounded bg-gray-100 w-full">Focus Chat</button>
+            <button id="newPostBtn" class="mt-2 px-3 py-2 rounded bg-gray-100 w-full">New Post</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="postsTab" class="tab-content hidden">
+      <div class="white-card mb-4">
+        <div class="flex gap-3">
+          <img id="postAvatar" class="avatar" src="">
+          <div class="flex-1">
+            <textarea id="postContent" class="w-full px-3 py-2 border rounded" placeholder="Share something..."></textarea>
+            <div class="flex items-center justify-between mt-3">
+              <div>
+                <input id="postTags" placeholder="#tags" class="px-2 py-1 border rounded small-muted" />
+                <button id="postAttach" class="px-2 py-1 border rounded small-muted">Attach</button>
+                <input id="postFile" type="file" class="hidden" />
+              </div>
+              <div>
+                <button id="submitPost" class="px-4 py-2 bg-fuchsia-600 text-white rounded">Post</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="communityPosts" class="space-y-4"></div>
+    </div>
+
+    <div id="annTab" class="tab-content hidden">
+      <div id="announcementsList" class="space-y-4"></div>
+    </div>
+
+  </main>
+
+  <!-- footer -->
+  <footer class="text-center py-6 small-muted">© 2025 Books Coffee and Dreams</footer>
+
+  <!-- SCRIPTS -->
+  <script type="module">
+    // -------------------------
+    // CONFIG + IMPORTS
+    // -------------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, onSnapshot, query, orderBy,
+      serverTimestamp, doc, setDoc, getDoc, where, updateDoc, deleteDoc,
+      increment, arrayUnion, arrayRemove
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // --------- CONFIG (replace if needed) ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.firebasestorage.app",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    // Cloudinary unsigned upload (your values)
+    const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dkxuilgai/auto/upload";
+    const CLOUDINARY_UPLOAD_PRESET = "bcd_courses";
+
+    // Default avatar (GitHub raw)
+    const DEFAULT_AVATAR = "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // -------------------------
+    // UI Elements
+    // -------------------------
+    const chatInput = document.getElementById("chatInput");
+    const sendChatBtn = document.getElementById("sendChatBtn");
+    const chatMessages = document.getElementById("chatMessages");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const onlineList = document.getElementById("onlineList");
+    const onlineCount = document.getElementById("onlineCount");
+    const signedName = document.getElementById("signedName");
+    const headerPhoto = document.getElementById("headerPhoto");
+    const loginBtn = document.getElementById("loginBtn");
+
+    const postAvatar = document.getElementById("postAvatar");
+    const postContent = document.getElementById("postContent");
+    const submitPost = document.getElementById("submitPost");
+    const communityPosts = document.getElementById("communityPosts");
+
+    const attachBtn = document.getElementById("attachBtn");
+    const chatFile = document.getElementById("chatFile");
+    const postAttach = document.getElementById("postAttach");
+    const postFile = document.getElementById("postFile");
+    const postTags = document.getElementById("postTags");
+
+    let currentUser = null;
+    let currentUserRole = null; // 'admin' or undefined
+    let typingTimeout = null;
+
+    // cache for user profiles (uid -> {profileURL, name, photo, active})
+    const userCache = {};
+
+    // -------------------------
+    // Helper: fetch user profile (cached) + active check
+    // Implementation detail for H1:
+    // - We mark user as inactive if the user doc is missing OR has deleted==true || disabled==true
+    // - Admins should mark deleted users with deleted:true when they remove them from Auth if they prefer.
+    // -------------------------
+    async function getUserProfile(uid) {
+      if (!uid) return null;
+      if (userCache[uid]) return userCache[uid];
+
+      try {
+        const uRef = doc(db, "users", uid);
+        const snap = await getDoc(uRef);
+        if (!snap.exists()) {
+          // user doc missing -> treat as removed (inactive)
+          const profile = { profileURL: null, photo: null, displayName: null, active: false };
+          userCache[uid] = profile;
+          return profile;
+        }
+        const data = snap.data();
+
+        // if admin set flags deleted/disabled -> treat as inactive (H1)
+        const inactive = !!(data.deleted === true || data.disabled === true);
+        const profile = {
+          profileURL: data.profileURL || null,
+          photo: data.photo || null,
+          displayName: data.displayName || data.name || null,
+          role: data.role || null,
+          active: !inactive
+        };
+        userCache[uid] = profile;
+        return profile;
+      } catch (e) {
+        // on error, assume inactive fail-safe
+        const profile = { profileURL: null, photo: null, displayName: null, active: false };
+        userCache[uid] = profile;
+        return profile;
+      }
+    }
+
+    // -------------------------
+    // Tabs
+    // -------------------------
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab || (btn.textContent.trim().includes('Chat') ? 'chatTab' : btn.textContent.trim().includes('Posts') ? 'postsTab' : 'annTab');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(tab).classList.remove('hidden');
+      });
+    });
+
+    document.getElementById('focusChat').addEventListener('click', () => {
+      document.querySelector('[data-tab="chatTab"]').click();
+      chatInput.focus();
+    });
+    document.getElementById('newPostBtn').addEventListener('click', () => {
+      document.querySelector('[data-tab="postsTab"]').click();
+      postContent.focus();
+    });
+
+    // attach buttons
+    attachBtn.addEventListener('click', () => chatFile.click());
+    postAttach.addEventListener('click', () => postFile.click());
+
+    chatFile.addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      await uploadFileToCloudinaryAndSend(f, "chat");
+      chatFile.value = "";
+    });
+
+    postFile.addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      postFile._file = f;
+    });
+
+    // -------------------------
+    // Auth state & header avatar (with profile fallback)
+    // Also fetch currentUserRole from users/{uid}.role
+    // -------------------------
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
+      currentUserRole = null;
+
+      if (user) {
+        // fetch Firestore profile if any (cached)
+        const uProfile = await getUserProfile(user.uid);
+
+        // determine role if set in users doc
+        currentUserRole = uProfile?.role || null;
+
+        const finalPhoto = user.photoURL || (uProfile && (uProfile.profileURL || uProfile.photo)) || DEFAULT_AVATAR;
+        headerPhoto.src = finalPhoto;
+        headerPhoto.classList.remove("hidden");
+        loginBtn.classList.add("hidden");
+        signedName.textContent = user.displayName || user.email || "User";
+        postAvatar.src = finalPhoto; // composer avatar
+      } else {
+        headerPhoto.classList.add("hidden");
+        loginBtn.classList.remove("hidden");
+        signedName.textContent = "Guest";
+        postAvatar.src = DEFAULT_AVATAR;
+      }
+    });
+
+    // HEARTBEAT PRESENCE SYSTEM
+let heartbeatInterval = null;
+
+function startHeartbeat(uid) {
+  stopHeartbeat();
+
+  const pRef = doc(db, "presence", uid);
+
+  heartbeatInterval = setInterval(() => {
+    setDoc(pRef, {
+      name: currentUser.displayName || currentUser.email || "User",
+      photo: currentUser.photoURL || null,
+      lastSeen: serverTimestamp()
+    }, { merge: true });
+  }, 20000); // every 20 seconds
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+}
+
+// hook into auth
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  currentUserRole = null;
+
+  if (user) {
+    const uProfile = await getUserProfile(user.uid);
+    currentUserRole = uProfile?.role || null;
+
+    const finalPhoto =
+      user.photoURL || uProfile.profileURL || uProfile.photo || DEFAULT_AVATAR;
+
+    headerPhoto.src = finalPhoto;
+    headerPhoto.classList.remove("hidden");
+    loginBtn.classList.add("hidden");
+    signedName.textContent = user.displayName || user.email;
+
+    postAvatar.src = finalPhoto;
+
+    startHeartbeat(user.uid);
+  } else {
+    stopHeartbeat();
+    headerPhoto.classList.add("hidden");
+    loginBtn.classList.remove("hidden");
+    signedName.textContent = "Guest";
+    postAvatar.src = DEFAULT_AVATAR;
+  }
+});
+
+    // typing indicator (update presence.typing)
+    function indicateTyping(isTyping) {
+      if (!currentUser) return;
+      const pRef = doc(db, "presence", currentUser.uid);
+      setDoc(pRef, { typing: isTyping, lastSeen: serverTimestamp() }, { merge: true }).catch(()=>{});
+    }
+
+    chatInput.addEventListener('input', () => {
+      indicateTyping(true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => indicateTyping(false), 1200);
+    });
+
+    // -------------------------
+    // Notifications helper (correct path)
+    // -------------------------
+    async function createNotificationFor(uid, payload) {
+      if (!uid) return;
+      try {
+        const nRef = collection(db, "notifications", uid, "items");
+        await addDoc(nRef, {
+          ...payload,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch (e) {
+        console.warn("notify failed", e);
+      }
+    }
+
+    // -------------------------
+    // Cloudinary upload helper
+    // -------------------------
+    async function uploadToCloudinary(file) {
+      if (!CLOUDINARY_UPLOAD_PRESET || CLOUDINARY_UPLOAD_PRESET.includes("YOUR")) {
+        alert("Set CLOUDINARY_UPLOAD_PRESET and CLOUDINARY_UPLOAD_URL in the file.");
+        throw new Error("Cloudinary not configured");
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+      const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: "POST", body: fd });
+      if (!res.ok) throw new Error("Upload failed");
+      const body = await res.json();
+      return body; // contains secure_url etc.
+    }
+
+    async function uploadFileToCloudinaryAndSend(file, mode = "chat") {
+      try {
+        const body = await uploadToCloudinary(file);
+        const secure_url = body.secure_url || body.secureUrl || body.url;
+        const resource_type = body.resource_type || body.format || "auto";
+        if (mode === "chat") {
+          await sendMessage({ text: "", fileUrl: secure_url, fileType: resource_type, fileName: file.name });
+        } else {
+          postFile._uploaded = { url: secure_url, type: resource_type, name: file.name };
+          alert("File attached to post. Click Post to publish.");
+        }
+      } catch (e) {
+        console.error("cloud upload failed", e);
+        alert("File upload failed.");
+      }
+    }
+
+    // -------------------------
+    // Send message
+    // -------------------------
+    async function sendMessage({ text, fileUrl, fileType, fileName } = {}) {
+      const contentText = (text !== undefined) ? text : chatInput.value.trim();
+      if (!currentUser && !contentText && !fileUrl) {
+        alert("Sign in to chat.");
+        return;
+      }
+      if (!contentText && !fileUrl) return;
+
+      // mentions (visual only)
+      const mentions = Array.from((contentText || "").matchAll(/@([a-zA-Z0-9_\-\.]{2,50})/g)).map(m => m[1]);
+
+      try {
+        await addDoc(collection(db, "communityChat"), {
+          message: contentText || "",
+          by: currentUser?.displayName || currentUser?.email || "Guest",
+          uid: currentUser?.uid || null,
+          photo: currentUser?.photoURL || null,
+          createdAt: serverTimestamp(),
+          fileUrl: fileUrl || null,
+          fileType: fileType || null,
+          fileName: fileName || null,
+          reactions: {} // map emoji -> array of uids
+        });
+
+        if (currentUser) {
+          try { await updateUserXp(currentUser.uid, 2); } catch(e) {}
+        }
+
+        chatInput.value = "";
+        indicateTyping(false);
+      } catch (err) {
+        console.error("send failed", err);
+        alert("Message failed to send. Check permissions.");
+      }
+    }
+
+    sendChatBtn.addEventListener('click', () => sendMessage({}));
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage({}); }
+    });
+
+    // -------------------------
+    // Render chat (live)
+    // -------------------------
+    const chatQ = query(collection(db, "communityChat"), orderBy("createdAt", "asc"));
+    onSnapshot(chatQ, snap => {
+      chatMessages.innerHTML = "";
+      snap.forEach(async docSnap => {
+        const d = docSnap.data();
+        const id = docSnap.id;
+
+        const wrap = document.createElement('div');
+        wrap.className = "message flex items-start gap-3 mb-3";
+
+        const img = document.createElement('img');
+        img.className = "avatar";
+        img.src = DEFAULT_AVATAR; // default until resolved
+        wrap.appendChild(img);
+
+        const body = document.createElement('div');
+        body.className = "flex-1";
+
+        const header = document.createElement('div');
+        header.className = "flex items-center gap-3";
+
+        const nameEl = document.createElement('div');
+        nameEl.innerHTML = `<div class="font-semibold">${escapeHtml(d.by || 'User')}</div><div class="meta small-muted">${d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleString() : ''}</div>`;
+        header.appendChild(nameEl);
+
+        // admin actions - only show for admins
+        const adminActions = document.createElement('div');
+        adminActions.className = "admin-actions ml-auto";
+        if (currentUserRole === 'admin') {
+          const delBtn = document.createElement('button');
+          delBtn.textContent = "Delete";
+          delBtn.className = "px-2 py-1 rounded bg-red-100 small-muted";
+          delBtn.onclick = async () => {
+            if (!confirm("Delete message?")) return;
+            try {
+              await deleteDoc(doc(db, "communityChat", id));
+            } catch (e) { alert("Delete failed (permissions)."); }
+          };
+          adminActions.appendChild(delBtn);
+        }
+        header.appendChild(adminActions);
+
+        const msgText = document.createElement('div');
+        msgText.className = "mt-2";
+        msgText.innerHTML = highlightMentionsAndLinks(escapeHtml(d.message || ""));
+
+        body.appendChild(header);
+        body.appendChild(msgText);
+
+        // file preview
+        if (d.fileUrl) {
+          const fDiv = document.createElement('div');
+          fDiv.className = "mt-2";
+          if ((d.fileType || "").startsWith("image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(d.fileName || "")) {
+            fDiv.innerHTML = `<a href="${d.fileUrl}" target="_blank"><img src="${d.fileUrl}" class="file-preview" /></a>`;
+          } else {
+            fDiv.innerHTML = `<a class="small-muted" href="${d.fileUrl}" target="_blank">📎 ${escapeHtml(d.fileName || 'file')}</a>`;
+          }
+          body.appendChild(fDiv);
+        }
+
+        // reactions UI (R2 - Discord-like minimal)
+        const reactionsDiv = document.createElement('div');
+        reactionsDiv.className = "mt-3 flex gap-2 items-center";
+        const EMOJIS = ['👍','❤️','😂','😮'];
+        EMOJIS.forEach(emoji => {
+          const rbtn = document.createElement('button');
+          rbtn.className = "reaction-btn small small-muted";
+          rbtn.innerHTML = `${emoji} <span class="react-count">0</span>`;
+
+          rbtn.onclick = async () => {
+            if (!currentUser) return alert("Sign in to react.");
+            const msgRef = doc(db, "communityChat", id);
+            const uid = currentUser.uid;
+            const path = `reactions.${emoji}`;
+
+            // compute current reacted state from latest local snapshot (d)
+            const reactedNow = (d.reactions && Array.isArray(d.reactions[emoji]) && d.reactions[emoji].includes(uid));
+
+            try {
+              if (reactedNow) {
+                await updateDoc(msgRef, { [path]: arrayRemove(uid) });
+              } else {
+                await updateDoc(msgRef, { [path]: arrayUnion(uid) });
+              }
+            } catch (e) {
+              console.warn("reaction write failed", e);
+            }
+          };
+
+          reactionsDiv.appendChild(rbtn);
+        });
+
+        body.appendChild(reactionsDiv);
+
+        wrap.appendChild(body);
+        chatMessages.appendChild(wrap);
+
+        // fetch profile fallback (uid -> profileURL) and update avatar
+        (async () => {
+          try {
+            let avatar = d.photo || null;
+            if (!avatar && d.uid) {
+              const p = await getUserProfile(d.uid);
+              // IMPORTANT: H1 behavior: hide user from lists if p.active === false.
+              // For messages we DO NOT hide the message; we still display the message with stored by/photo.
+              // But if you also want author name to be replaced on messages, we would need to change.
+              if (p && (p.profileURL || p.photo)) avatar = p.profileURL || p.photo;
+            }
+            avatar = avatar || DEFAULT_AVATAR;
+            img.src = avatar;
+          } catch (e) {
+            img.src = DEFAULT_AVATAR;
+          }
+        })();
+
+        // fill reaction counts and highlight if reacted
+        (function renderReactionsLocal(d, container) {
+          const reactBtns = container.querySelectorAll('.reaction-btn');
+          reactBtns.forEach((btn, idx) => {
+            const emoji = EMOJIS[idx];
+            const users = (d.reactions && d.reactions[emoji]) ? d.reactions[emoji] : [];
+            const count = users.length || 0;
+            const uid = currentUser?.uid || null;
+            btn.querySelector('.react-count').textContent = String(count);
+            if (uid && users.includes(uid)) {
+              btn.classList.add('reacted');
+            } else {
+              btn.classList.remove('reacted');
+            }
+          });
+        })(d, reactionsDiv);
+
+      }); // end forEach (chat)
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, err => {
+      console.error("chat snapshot failed", err);
+    });
+
+    // -------------------------
+    // Presence & online list (H1: hide removed users)
+    // We will filter presence entries by checking users/{uid} active flag.
+    // If the users doc is missing OR deleted/disabled==true => we exclude that uid from lists.
+    // -------------------------
+    // Presence using lastSeen (offline after 40s)
+const presenceQ = query(collection(db, "presence"));
+
+onSnapshot(presenceQ, async snap => {
+  onlineList.innerHTML = "";
+  let online = 0;
+  const typingUsers = [];
+
+  const now = Date.now() / 1000;
+
+  const uids = [];
+  snap.forEach(s => uids.push(s.id));
+  await Promise.all(uids.map(async uid => {
+    if (!userCache[uid]) await getUserProfile(uid);
+  }));
+
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const uid = docSnap.id;
+    const profile = userCache[uid];
+
+    if (!profile || profile.active === false) return;
+
+    const last = d.lastSeen?.seconds || 0;
+    const isOnline = (now - last) < 40;
+
+    if (isOnline) online++;
+
+    const li = document.createElement("div");
+    li.className = "flex items-center gap-2";
+
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.src = d.photo || profile.profileURL || profile.photo || DEFAULT_AVATAR;
+
+    const name = document.createElement("div");
+    name.innerHTML = `
+      <div class="font-semibold">${escapeHtml(d.name || profile.displayName || "User")}</div>
+      <div class="small-muted">${isOnline ? "online" : "last seen " + timeAgo(new Date(last * 1000))}</div>
+    `;
+
+    li.appendChild(img);
+    li.appendChild(name);
+    onlineList.appendChild(li);
+
+    if (d.typing && isOnline) typingUsers.push(d.name || profile.displayName);
+  });
+
+  onlineCount.textContent = online;
+  typingIndicator.textContent =
+    typingUsers.length ? typingUsers.join(", ") + " typing…" : "";
+});
+
+    // -------------------------
+    // Posts & comments
+    // Posts display author info from stored doc fields (by/photo). Those remain even if author is removed.
+    // Only admin can delete posts/comments.
+    // -------------------------
+    submitPost.addEventListener('click', async () => {
+      if (!currentUser) return alert("Sign in to post.");
+      const text = postContent.value.trim();
+      if (!text && !postFile._uploaded) return alert("Write something or attach a file.");
+      const tags = (postTags.value || "").split(/[\s,]+/).filter(Boolean).map(t => t.startsWith('#') ? t : '#'+t);
+
+      let attached = null;
+      if (postFile._file && !postFile._uploaded) {
+        try {
+          const up = await uploadToCloudinary(postFile._file);
+          postFile._uploaded = { url: up.secure_url, type: up.resource_type, name: postFile._file.name };
+        } catch (e) { console.error("post file upload failed", e); alert("Upload failed"); return; }
+      }
+      if (postFile._uploaded) attached = postFile._uploaded;
+
+      try {
+        await addDoc(collection(db, "communityPosts"), {
+          content: text || "",
+          by: currentUser.displayName || currentUser.email,
+          uid: currentUser.uid,
+          photo: currentUser.photoURL || null,
+          createdAt: serverTimestamp(),
+          tags: tags,
+          attached: attached || null,
+          reactions: {},
+          commentsCount: 0
+        });
+
+        await updateUserXp(currentUser.uid, 10);
+        postContent.value = "";
+        postFile._file = null;
+        postFile._uploaded = null;
+      } catch (e) {
+        console.error("post failed", e);
+        alert("Post failed - permissions?");
+      }
+    });
+
+    // load posts
+    const postsQ = query(collection(db, "communityPosts"), orderBy("createdAt", "desc"));
+    onSnapshot(postsQ, snap => {
+      communityPosts.innerHTML = "";
+      snap.forEach(async docSnap => {
+        const d = docSnap.data();
+        const id = docSnap.id;
+        const el = document.createElement('div');
+        el.className = "white-card";
+
+        // build reactions summary HTML
+        const reactionsHtml = buildReactionsHtml(d.reactions || {});
+
+        el.innerHTML = `
+          <div class="flex items-start gap-3">
+            <img id="post_img_${id}" src="${DEFAULT_AVATAR}" class="avatar" />
+            <div class="flex-1">
+              <div class="flex items-center gap-3">
+                <div class="font-semibold">${escapeHtml(d.by || 'User')}</div>
+                <div class="small-muted">${d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleString() : ''}</div>
+                <div class="admin-actions" style="margin-left:auto;"></div>
+              </div>
+              <div class="mt-2">${highlightMentionsAndLinks(escapeHtml(d.content || ""))}</div>
+              ${d.attached ? (d.attached.type && d.attached.type.startsWith("image") ? `<div class="mt-3"><img src="${d.attached.url}" class="file-preview"/></div>` : `<div class="mt-2 small-muted"><a href="${d.attached.url}" target="_blank">📎 ${escapeHtml(d.attached.name || 'file')}</a></div>`) : ''}
+              <div class="mt-3">${reactionsHtml}</div>
+              <div class="mt-3 small-muted">Comments: <span id="commentsCount_${id}">${d.commentsCount || 0}</span></div>
+              <div class="mt-3">
+                <div id="comments_area_${id}" class="space-y-2"></div>
+                <div class="flex gap-2 mt-2">
+                  <input id="comment_input_${id}" class="flex-1 px-3 py-2 border rounded" placeholder="Reply..." />
+                  <button data-postid="${id}" class="comment-btn px-3 py-2 bg-gray-100 rounded">Reply</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        communityPosts.appendChild(el);
+
+        // admin delete button (only visible to admins)
+        const adminActionsContainer = el.querySelector('.admin-actions');
+        if (currentUserRole === 'admin') {
+          const delBtn = document.createElement('button');
+          delBtn.className = "px-2 py-1 rounded bg-red-100 small-muted";
+          delBtn.textContent = "Delete";
+          delBtn.onclick = async () => {
+            if (!confirm("Delete post?")) return;
+            try { await deleteDoc(doc(db, "communityPosts", id)); } catch(e){ alert("Could not delete (permissions)"); }
+          };
+          adminActionsContainer.appendChild(delBtn);
+        }
+
+        // wire comment btn
+        el.querySelector('.comment-btn').addEventListener('click', async (ev) => {
+          const pid = ev.currentTarget.dataset.postid;
+          const input = document.getElementById('comment_input_' + pid);
+          const text = input.value.trim();
+          if (!text) return;
+          try {
+            await addDoc(collection(db, "communityPosts", pid, "comments"), {
+              content: text,
+              by: currentUser?.displayName || currentUser?.email || "Guest",
+              uid: currentUser?.uid || null,
+              createdAt: serverTimestamp()
+            });
+
+            const pRef = doc(db, "communityPosts", pid);
+            await updateDoc(pRef, { commentsCount: increment(1) }).catch(()=>{});
+            input.value = "";
+            if (currentUser) await updateUserXp(currentUser.uid, 5);
+          } catch(e){ console.error("comment failed", e); alert("Comment failed"); }
+        });
+
+        // load comments live
+        const commentsQ = query(collection(db, "communityPosts", id, "comments"), orderBy("createdAt","asc"));
+        onSnapshot(commentsQ, csnap => {
+          const area = document.getElementById('comments_area_' + id);
+          area.innerHTML = "";
+          csnap.forEach(cDoc => {
+            const cd = cDoc.data();
+            const cdiv = document.createElement('div');
+            cdiv.className = "p-2 border rounded";
+            cdiv.innerHTML = `<div class="font-semibold">${escapeHtml(cd.by || 'User')}</div><div class="small-muted">${escapeHtml(cd.content)}</div><div class="small-muted">${cd.createdAt ? new Date(cd.createdAt.seconds*1000).toLocaleString() : ''}</div>`;
+            area.appendChild(cdiv);
+          });
+          document.getElementById('commentsCount_' + id).textContent = String(area.childElementCount);
+        });
+
+        // resolve avatar for post author (use the stored photo first, otherwise fall back to profile)
+        (async () => {
+          try {
+            let avatar = d.photo || null;
+            if (!avatar && d.uid) {
+              const p = await getUserProfile(d.uid);
+              if (p && (p.profileURL || p.photo)) avatar = p.profileURL || p.photo;
+            }
+            avatar = avatar || DEFAULT_AVATAR;
+            const imgEl = document.getElementById('post_img_' + id);
+            if (imgEl) imgEl.src = avatar;
+          } catch (e) {
+            const imgEl = document.getElementById('post_img_' + id);
+            if (imgEl) imgEl.src = DEFAULT_AVATAR;
+          }
+        })();
+
+        // wire post reactions toggles
+        (function wirePostReactions(localDoc, containerEl) {
+          const EMOJIS = ['👍','❤️','😂','😮'];
+          const reactButtons = containerEl.querySelectorAll('.reaction-btn');
+          reactButtons.forEach((btn, idx) => {
+            const emoji = EMOJIS[idx];
+            btn.addEventListener('click', async () => {
+              if (!currentUser) return alert("Sign in to react.");
+              const pRef = doc(db, "communityPosts", id);
+              const uid = currentUser.uid;
+              const path = `reactions.${emoji}`;
+              const users = (localDoc.reactions && localDoc.reactions[emoji]) ? localDoc.reactions[emoji] : [];
+              const reacted = users.includes(uid);
+              try {
+                if (reacted) await updateDoc(pRef, { [path]: arrayRemove(uid) });
+                else await updateDoc(pRef, { [path]: arrayUnion(uid) });
+              } catch(e) { console.warn("post reaction failed", e); }
+            });
+          });
+        })(d, el);
+
+      }); // end posts loop
+    });
+
+    // -------------------------
+    // Announcements
+    // -------------------------
+    const annQ = query(collection(db, "announcements"), orderBy("createdAt","desc"));
+    onSnapshot(annQ, snap => {
+      const container = document.getElementById('announcementsList');
+      container.innerHTML = "";
+      snap.forEach(d => {
+        const data = d.data();
+        const el = document.createElement('div');
+        el.className = "white-card";
+        el.innerHTML = `<div class="font-semibold">📣 ${escapeHtml(data.title || 'Announcement')}</div><div class="mt-2">${escapeHtml(data.message || '')}</div><div class="small-muted mt-2">${data.createdAt ? new Date(data.createdAt.seconds*1000).toLocaleString() : ''}</div>`;
+        container.appendChild(el);
+      });
+    });
+
+    // -------------------------
+    // XP helper
+    // -------------------------
+    async function updateUserXp(uid, amount) {
+      if (!uid || !amount) return;
+      try {
+        const uRef = doc(db, "users", uid);
+        await updateDoc(uRef, { xp: increment(amount) });
+      } catch (e) {
+        try { await setDoc(doc(db, "users", uid), { xp: amount }, { merge: true }); } catch {}
+      }
+    }
+
+    // -------------------------
+    // Utilities
+    // -------------------------
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function timeAgo(date) {
+      if (!date) return "";
+      const s = Math.floor((Date.now() - date.getTime())/1000);
+      if (s < 60) return s + "s ago";
+      if (s < 3600) return Math.floor(s/60) + "m ago";
+      if (s < 86400) return Math.floor(s/3600) + "h ago";
+      return Math.floor(s/86400) + "d ago";
+    }
+
+    function highlightMentionsAndLinks(txt) {
+      let res = txt.replace(/@([a-zA-Z0-9_\-\.]{2,50})/g, `<span class="mention">@$1</span>`);
+      res = res.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="small-muted">$1</a>');
+      return res;
+    }
+
+    function buildReactionsHtml(reactionsMap) {
+      const EMOJIS = ['👍','❤️','😂','😮'];
+      let html = '';
+      EMOJIS.forEach(e => {
+        const users = reactionsMap[e] || [];
+        const count = users.length || 0;
+        html += `<button class="reaction-btn small">${e} <span class="react-count">${count}</span></button>`;
+      });
+      return html;
+    }
+
+    /* ===========================
+       NOTES & ADMIN ACTIONS
+       - H1 behavior (hide removed users): Client hides presence/members if users/{uid} doc missing OR has deleted===true/disabled===true.
+         -> Recommended admin workflow: when you remove a user from Firebase Auth, ALSO set users/{uid}.deleted = true (or delete the users doc). If you want this automated, I can provide a Cloud Function that sets deleted:true when an auth user is deleted.
+       - Only users with users/{uid}.role === "admin" see delete buttons and can delete messages/posts/comments.
+       - For secure reaction updates, ensure your Firestore rules allow authenticated users to update reactions (or use Cloud Function).
+    =========================== */
+
+  </script>
+
+  <!-- AOS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({ duration: 800 });</script>
+</body>
+</html>

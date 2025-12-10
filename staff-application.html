@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BCD - Discord Staff Application</title>
+  <link rel="stylesheet" href="staff-application.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="/logo.png" rel="icon">
+  <link href="/logo.png" rel="apple-touch-icon">
+</head>
+<body>
+  <div class="bg">
+    <div class="form-card">
+      <h2>💜 Be a part of BCD</h2>
+      <p>We’re looking for amazing staff! Apply now using the form below.</p>
+      <form id="staffForm">
+        <input type="text" name="username" placeholder="Your Name" required />
+        <input type="text" name="discordTag" placeholder="Discord Tag (e.g. User#1234)" required />
+        <input type="number" name="age" placeholder="Age" required />
+        <textarea name="experience" placeholder="Your experience in moderation, Discord, etc." required></textarea>
+        <textarea name="reason" placeholder="Why do you want to be staff?" required></textarea>
+        <button type="submit">🚀 Submit Application</button>
+      </form>
+      <p id="successMsg"></p>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="staff-application-firebase.js"></script>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BCD • Dashboard (UI-1 Dark)</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome (for small icons) -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <style>
+    :root{
+      --blue: #4C8CFF;
+      --green: #2ECC71;
+      --grad: linear-gradient(90deg,var(--blue),var(--green));
+      --bg: #0f1216;
+      --panel: #15181b;
+      --muted: #9aa3ad;
+    }
+
+    html,body { height:100%; }
+    body {
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Header */
+    .app-header {
+      height:72px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 28px;
+      position:sticky;
+      top:0;
+      z-index:60;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(6px);
+    }
+    .logo { font-weight:800; letter-spacing:1px; font-size:20px; color:#fff; }
+
+    /* Announcement (green strip) */
+    .announce {
+      background: linear-gradient(90deg,#0fa36f,#0b9d6b);
+      color: white;
+      padding:12px 28px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      position:sticky;
+      top:72px;
+      z-index:55;
+    }
+    .announce .left { display:flex; gap:14px; align-items:center; }
+    .announce .meg { width:36px; height:36px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.08); border-radius:8px; }
+    .announce .cta { font-weight:600; color:rgba(255,255,255,0.95); }
+    .announce .muted-small { color: rgba(255,255,255,0.92); opacity:0.95; font-size:14px; }
+
+    /* Main container */
+    .page-wrap { width:100%; max-width:1220px; margin: 28px auto; padding: 0 20px; }
+
+    /* Banner slider */
+    .banner-wrap { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border-radius:18px; padding:16px; margin-bottom:28px; }
+    .hero {
+      height: 340px;
+      border-radius:14px;
+      overflow:hidden;
+      position:relative;
+      background:linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.02));
+    }
+    .hero img { width:100%; height:100%; object-fit:cover; display:block; }
+    .hero-slides { display:flex; transition:transform .45s cubic-bezier(.2,.9,.2,1); }
+    .hero-dots { display:flex; gap:10px; justify-content:center; margin-top:14px; }
+    .dot { width:12px; height:12px; border-radius:999px; background: rgba(255,255,255,0.15); cursor:pointer; }
+    .dot.active { background: #111827; box-shadow: 0 0 0 6px rgba(255,255,255,0.07) inset; }
+
+    /* pick the right course cards */
+    .course-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:18px; margin-top:18px; }
+    .course-card { background: rgba(255,255,255,0.02); border-radius:14px; padding:22px; min-height:140px; display:flex; flex-direction:column; justify-content:space-between; border:1px solid rgba(255,255,255,0.03); }
+    .course-card h3 { font-weight:700; color:#fff; }
+    .course-card .view { color:var(--blue); font-weight:600; margin-top:8px; display:inline-flex; align-items:center; gap:8px; }
+
+    /* trending hero like interplay */
+    .trending-wrap { margin-top:36px; border-radius:14px; overflow:hidden; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.006)); padding:22px; }
+    .trending-hero { height:220px; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#0e1416; position:relative; }
+    .trending-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+    .trending-dots { display:flex; gap:10px; justify-content:center; margin-top:16px; }
+
+    /* quick actions row (Allen style) */
+    .quick-row { display:flex; gap:28px; align-items:flex-start; margin-top:34px; flex-wrap:wrap; }
+    .quick-card { width:120px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .quick-card .icon-wrap {
+      width:96px; height:96px; border-radius:16px; background: rgba(255,255,255,0.02); display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.03); position:relative; overflow:hidden;
+    }
+    /* blue bottom highlight */
+    .quick-card .icon-wrap::after {
+      content: ""; position:absolute; left:0; right:0; bottom:0; height:34%; background:var(--blue); opacity:0.18; transform:translateY(40%); transition:transform .22s ease, opacity .22s ease; border-top-left-radius:10px; border-top-right-radius:10px;
+    }
+    .quick-card:hover .icon-wrap::after { transform:translateY(0); opacity:0.36; }
+    .quick-card img { width:56px; height:56px; object-fit:contain; display:block; }
+
+    /* LOFI short videos horizontally scroll */
+    .shorts { display:flex; gap:18px; overflow-x:auto; padding-bottom:8px; margin-top:28px; }
+    .short { min-width:220px; background: rgba(255,255,255,0.02); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03); }
+    .short .play { width:40px; height:40px; border-radius:999px; background:var(--blue); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; margin-bottom:10px; }
+
+    /* features (BCD advantage) */
+    .adv-grid { display:grid; grid-template-columns: 1fr 420px; gap:28px; margin-top:36px; align-items:center; }
+    .feature-list .feat { padding:18px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+    .feature-list h3 { font-weight:700; font-size:18px; margin-bottom:8px; }
+    .feature-list p { color:var(--muted); }
+
+    /* testimonials */
+    .testi-row { display:flex; gap:18px; overflow-x:auto; padding:12px 0; margin-top:28px; }
+    .testi { min-width:320px; background: rgba(255,255,255,0.02); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.03); color:#e7f0fb; }
+
+    /* callback form */
+    .callback { display:flex; gap:28px; margin-top:34px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border-radius:14px; padding:20px; align-items:center; }
+    .callback .panel { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); padding:22px; border-radius:12px; width:100%; border:1px solid rgba(255,255,255,0.02); }
+    .callback label { color:var(--muted); font-size:13px; display:block; margin-bottom:6px; }
+    .callback input, .callback select { width:100%; padding:12px 14px; border-radius:10px; background:rgba(0,0,0,0.35); color:#fff; border:1px solid rgba(255,255,255,0.04); outline:none; }
+
+    /* QR download */
+    .qr-download { display:flex; gap:28px; align-items:center; margin-top:36px; flex-wrap:wrap; }
+    .qr-box { width:180px; height:180px; background:white; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+    .stores { display:flex; flex-direction:column; gap:10px; }
+
+    /* footer */
+    .footer { margin-top:48px; padding:28px 0; color:var(--muted); border-top:1px solid rgba(255,255,255,0.02); }
+
+    /* small */
+    @media (max-width:1024px) { .course-grid { grid-template-columns: repeat(2,1fr); } .adv-grid { grid-template-columns: 1fr; } .hero { height:260px; } }
+    @media (max-width:640px) { .course-grid { grid-template-columns: 1fr; } .quick-row { justify-content:flex-start; } .announce { position:static; top:auto; } .hero { height:200px; } .page-wrap { padding: 0 14px; } }
+
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="flex items-center gap-4">
+      <div class="logo">BCD</div>
+      <!-- top nav (kept minimal for UI1) -->
+      <nav class="hidden md:flex items-center gap-6 ml-6 text-sm muted">
+        <a class="text-sm muted hover:text-white" href="#">Classroom Courses</a>
+        <a class="text-sm muted hover:text-white" href="#">Online Courses</a>
+        <a class="text-sm muted hover:text-white" href="#">Test Series</a>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <button class="w-10 h-10 rounded-full border border-white/6 flex items-center justify-center hover:bg-white/3">
+        <i class="fa-solid fa-bell"></i>
+      </button>
+
+      <div class="flex flex-col items-end -mt-1 hidden sm:flex">
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 rounded-md bg-[#1a1d1f] text-xs">11th</span>
+          <span class="px-3 py-1 rounded-md bg-[#1a1d1f] text-xs">JEE Adv.</span>
+        </div>
+        <a href="#" class="text-[var(--blue)] text-sm mt-1">Change course</a>
+      </div>
+
+      <button class="w-10 h-10 rounded-full overflow-hidden border border-transparent hover:border-[var(--blue)] transition">
+        <img src="https://i.pravatar.cc/40?u=anshuman" alt="avatar" class="w-full h-full object-cover">
+      </button>
+    </div>
+  </header>
+
+  <!-- ANNOUNCEMENT STRIP (sticky below header) -->
+  <div class="announce">
+    <div class="left">
+      <div class="meg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 11h2v6H3zM21 7a1 1 0 00-1-1h-3.586l-1.707-1.707A1 1 0 1 0 13.586 4L8 9.586V15h2v-4.586L17.414 4H19a3 3 0 013 3v4a3 3 0 01-3 3h-1v2h1a5 5 0 005-5V7z" fill="#fff"/></svg>
+      </div>
+      <div>
+        <div class="cta">New BCD Courses Are Now Live! ✨</div>
+        <div class="muted-small">Start learning today with an early offer</div>
+      </div>
+    </div>
+    <div class="hidden sm:block">
+      <a class="text-white/90 font-semibold px-3 py-1 rounded-md bg-[rgba(0,0,0,0.08)]" href="#">Explore offers ➜</a>
+    </div>
+  </div>
+
+  <!-- PAGE -->
+  <main class="page-wrap">
+
+    <!-- BANNER SLIDER -->
+    <section class="banner-wrap">
+      <div class="hero" id="hero">
+        <div class="hero-slides" id="heroSlides">
+          <!-- slide 1 -->
+          <div style="min-width:100%; flex-shrink:0;">
+            <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/banner%20allen.png" alt="banner 1">
+          </div>
+          <!-- slide 2 (duplicate for demo, replace as needed) -->
+          <div style="min-width:100%; flex-shrink:0;">
+            <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/banner%20allen.png" alt="banner 2">
+          </div>
+          <!-- Add more slides as needed -->
+        </div>
+      </div>
+
+      <div class="hero-dots" id="heroDots" style="display:flex; justify-content:center; margin-top:14px;">
+        <div class="dot active" data-index="0"></div>
+        <div class="dot" data-index="1"></div>
+        <div class="dot" data-index="2"></div>
+        <div class="dot" data-index="3"></div>
+      </div>
+    </section>
+
+    <!-- PICK THE RIGHT COURSE -->
+    <section>
+      <h2 class="text-2xl font-bold mb-4">Pick the right course for you</h2>
+      <div class="course-grid">
+        <div class="course-card">
+          <h3>NEET Courses</h3>
+          <p class="muted text-sm">Comprehensive NEET preparation — classroom and online options.</p>
+          <a href="#" class="view">View Courses ➜</a>
+        </div>
+
+        <div class="course-card">
+          <h3>JEE Courses</h3>
+          <p class="muted text-sm">Target IIT-JEE with curated live classes and practice packs.</p>
+          <a href="#" class="view">View Courses ➜</a>
+        </div>
+
+        <div class="course-card">
+          <h3>Courses for class 6–10</h3>
+          <p class="muted text-sm">Foundation and Olympiad training for younger learners.</p>
+          <a href="#" class="view">View Courses ➜</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRENDING / SLIDER -->
+    <section class="trending-wrap">
+      <h2 class="text-2xl font-bold mb-4">What's Trending</h2>
+
+      <div class="trending-hero" id="trendHero">
+        <div style="width:100%; height:100%;"><img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/banner%20allen.png" alt="trending"></div>
+      </div>
+
+      <div class="trending-dots">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </section>
+
+    <!-- LOFI SHORT VIDEOS -->
+    <section>
+      <h2 class="text-2xl font-bold mt-8 mb-4">Shorts</h2>
+      <div class="shorts" id="shorts">
+        <!-- sample short cards -->
+        <div class="short">
+          <div class="play">▶</div>
+          <div class="text-sm font-semibold">No shortcuts! From AIR 27,249 to AIR 1,341</div>
+        </div>
+        <div class="short">
+          <div class="play">▶</div>
+          <div class="text-sm font-semibold">From Bankura to Government Medical</div>
+        </div>
+        <div class="short">
+          <div class="play">▶</div>
+          <div class="text-sm font-semibold">Laser sharp focus led him to success</div>
+        </div>
+        <div class="short">
+          <div class="play">▶</div>
+          <div class="text-sm font-semibold">Debater. Flute player. IITian.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK ACTIONS (Allen style) -->
+    <section>
+      <h2 class="text-2xl font-bold mt-8 mb-4">Quick Actions</h2>
+
+      <div class="quick-row">
+        <!-- Revision Notes -->
+        <div class="quick-card">
+          <div class="icon-wrap">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/revision%20notes.png?raw=true" alt="rev">
+          </div>
+          <div class="text-sm font-medium">Revision Notes</div>
+        </div>
+
+        <!-- Custom Practice -->
+        <div class="quick-card">
+          <div class="icon-wrap">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/custom%20practice.png?raw=true" alt="custom">
+          </div>
+          <div class="text-sm font-medium">Custom Practice</div>
+        </div>
+
+        <!-- Improvement Book -->
+        <div class="quick-card">
+          <div class="icon-wrap">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/improvement%20book.png?raw=true" alt="imp">
+          </div>
+          <div class="text-sm font-medium">Improvement Book</div>
+        </div>
+
+        <!-- Flashcards -->
+        <div class="quick-card">
+          <div class="icon-wrap">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/flash-card.png?raw=true" alt="flash">
+          </div>
+          <div class="text-sm font-medium">Flashcards</div>
+        </div>
+
+        <!-- Topic Booster -->
+        <div class="quick-card">
+          <div class="icon-wrap" style="position:relative;">
+            <span style="position:absolute; top:8px; right:8px; background:var(--blue); color:white; font-size:11px; padding:4px 7px; border-radius:8px;">NEW</span>
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/topic%20booster.png?raw=true" alt="topic">
+          </div>
+          <div class="text-sm font-medium">Topic Booster</div>
+        </div>
+
+        <!-- PYQ -->
+        <div class="quick-card">
+          <div class="icon-wrap">
+            <img src="https://github.com/bookscoffeedreams/bookscoffeedreams.github.io/blob/main/assets/images/pyq.png?raw=true" alt="pyq">
+          </div>
+          <div class="text-sm font-medium">PYQ Zone</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BCD APP ADVANTAGE & RIGHT IMAGE -->
+    <section class="adv-grid">
+      <div class="feature-list">
+        <h2 class="text-2xl font-bold">BCD App Advantage</h2>
+
+        <div class="feat">
+          <h3>400 Lakh+ Questions Practised</h3>
+          <p class="muted">Boost your score with practice! Pick topics & difficulty level, and let AI target your weak areas.</p>
+        </div>
+
+        <div class="feat">
+          <h3>10 Lakh+ hours of Learning Content</h3>
+          <p class="muted">Extensive library of lessons, detailed notes and video lectures.</p>
+        </div>
+
+        <div class="feat">
+          <h3>10 Lakh+ Doubts Solved</h3>
+          <p class="muted">Fast doubt resolution from mentors and peer community.</p>
+        </div>
+      </div>
+
+      <div style="background: linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); border-radius:14px; padding:14px; display:flex; align-items:center; justify-content:center;">
+        <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/improvement%20book.png?raw=true" alt="app" style="max-width:100%; height:320px; object-fit:contain;">
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section>
+      <h2 class="text-2xl font-bold mt-8 mb-4">Testimonials from our students</h2>
+      <div class="testi-row">
+        <div class="testi">
+          <p class="muted">"The LIVE classes were so engaging that it was super easy to always stay focused..."</p>
+          <div class="mt-6 flex items-center gap-3">
+            <img src="https://i.pravatar.cc/48?u=1" alt="" style="width:48px;height:48px;border-radius:999px;">
+            <div>
+              <div class="font-semibold">Aritro Ray</div>
+              <div class="muted text-sm">AIR 50, JEE '25</div>
+            </div>
+          </div>
+        </div>
+        <div class="testi">
+          <p class="muted">"I got to stay home with my family & aced my JEE prep with BCD Online..."</p>
+          <div class="mt-6 flex items-center gap-3">
+            <img src="https://i.pravatar.cc/48?u=2" alt="" style="width:48px;height:48px;border-radius:999px;">
+            <div>
+              <div class="font-semibold">Arka Banerjee</div>
+              <div class="muted text-sm">AIR 395, JEE '25</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi">
+          <p class="muted">"Improvement Book helped track & fix all my mistakes, best decision ever!"</p>
+          <div class="mt-6 flex items-center gap-3">
+            <img src="https://i.pravatar.cc/48?u=3" alt="" style="width:48px;height:48px;border-radius:999px;">
+            <div>
+              <div class="font-semibold">Tanmay Jagga</div>
+              <div class="muted text-sm">AIR 74, NEET '25</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REQUEST A CALLBACK & QR download -->
+    <section class="callback">
+      <div class="panel" style="flex:1;">
+        <h3 class="text-xl font-bold">Request a callback</h3>
+        <p class="muted mt-2">Share your details and our student advisor will reach out to you.</p>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:14px;">
+          <div>
+            <label>Full Name</label>
+            <input placeholder="Ex: Rohit Sharma" />
+          </div>
+          <div>
+            <label>Mobile Number</label>
+            <input placeholder="Ex: 9876543210" />
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label>Course Mode</label>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button style="padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03);">Online</button>
+            <button style="padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03);">Classroom</button>
+            <button style="padding:8px 12px; border-radius:10px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03);">Not sure</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; display:flex; justify-content:flex-end;">
+          <button style="background:var(--blue); color:white; padding:10px 16px; border-radius:10px; font-weight:600;">Let's get started</button>
+        </div>
+      </div>
+
+      <div style="width:260px;">
+        <div class="text-sm font-semibold mb-2">Scan to download</div>
+        <div class="qr-download">
+          <div class="qr-box">
+            <!-- placeholder QR -->
+            <img alt="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://bookscoffeedreams.github.io" style="width:130px;height:130px;">
+          </div>
+
+          <div class="stores">
+            <div style="background:#0b1620; color:white; padding:10px 14px; border-radius:10px; display:flex; align-items:center; gap:10px;"><i class="fa-brands fa-apple"></i> App Store</div>
+            <div style="background:#0b1620; color:white; padding:10px 14px; border-radius:10px; display:flex; align-items:center; gap:10px;"><i class="fa-brands fa-google-play"></i> Google Play</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div style="display:flex; justify-content:space-between; gap:20px; align-items:flex-start; flex-wrap:wrap;">
+        <div style="max-width:760px;">
+          <div style="font-weight:700; font-size:18px; color:#fff; margin-bottom:14px;">About BCD</div>
+          <div class="muted">BCD (Books Coffee Dreams) provides premium exam prep content and live classes. Replace this blurb with your official description.</div>
+        </div>
+
+        <div style="display:flex; gap:32px; flex-wrap:wrap;">
+          <div>
+            <div class="font-semibold mb-2">Courses</div>
+            <div class="muted">NEET Coaching<br>JEE Coaching<br>6th to 10th</div>
+          </div>
+
+          <div>
+            <div class="font-semibold mb-2">Help & Support</div>
+            <div class="muted">Refund policy<br>Contact us<br>Terms & Conditions</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:22px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div class="muted">© BCD • Books Coffee Dreams. All rights reserved.</div>
+        <div style="display:flex; gap:10px;">
+          <i class="fa-brands fa-youtube"></i>
+          <i class="fa-brands fa-instagram"></i>
+          <i class="fa-brands fa-facebook"></i>
+          <i class="fa-brands fa-x-twitter"></i>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- minimal JS for sliders/dots -->
+  <script>
+    (function(){
+      // HERO slider basics
+      const slidesWrap = document.getElementById('heroSlides');
+      const dots = Array.from(document.querySelectorAll('#heroDots .dot'));
+      let slideIndex = 0;
+      const total = slidesWrap.children.length;
+
+      function goTo(i){
+        slideIndex = (i + total) % total;
+        slidesWrap.style.transform = "translateX(-" + (slideIndex*100) + "%)";
+        dots.forEach(d => d.classList.remove('active'));
+        if(dots[slideIndex]) dots[slideIndex].classList.add('active');
+      }
+
+      // auto-advance
+      let hold = setInterval(()=> goTo(slideIndex+1), 4500);
+
+      // dot clicks
+      dots.forEach(d => d.addEventListener('click', (e)=>{
+        clearInterval(hold);
+        const idx = parseInt(e.currentTarget.getAttribute('data-index') || 0, 10);
+        goTo(idx);
+        hold = setInterval(()=> goTo(slideIndex+1), 4500);
+      }));
+
+      // ensure dots match number of slides; limit to available
+      if(dots.length > total){
+        // hide extra
+        for(let i=total;i<dots.length;i++) dots[i].style.display='none';
+      }
+
+      // trending hero and other small auto-simulated controls (keeps code light)
+      // You can replace with a proper carousel lib later.
+
+      // Touch support for shorts & testimonials (native horizontal scroll works)
+      // nothing else needed
+
+      // Accessibility: pause on focus
+      slidesWrap.addEventListener('mouseenter', ()=> clearInterval(hold));
+      slidesWrap.addEventListener('mouseleave', ()=> hold = setInterval(()=> goTo(slideIndex+1), 4500));
+
+      // init
+      goTo(0);
+    })();
+  </script>
+
+</body>
+</html>

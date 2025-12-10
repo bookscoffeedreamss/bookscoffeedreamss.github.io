@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Manage Users | Books Coffee and Dreams</title>
+
+  <!-- Tailwind + font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <link href="/logo.png" rel="icon">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(to bottom right,#f3e8ff,#ede9fe); }
+    .blur-glow { position: absolute; width: 260px; height: 260px; background: radial-gradient(circle at center, rgba(168,85,247,0.36), transparent); filter: blur(80px); z-index:-1;}
+    .card { background: rgba(255,255,255,0.95); border-radius: 14px; box-shadow: 0 10px 40px rgba(128,90,213,0.12); border: 1px solid rgba(0,0,0,0.04); }
+    .role-badge { padding:.25rem .6rem; border-radius:999px; font-weight:600; font-size:.8rem; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+    .role-avatar { width:20px; height:20px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; color:white; flex:0 0 20px; }
+    .small { font-size: .85rem; }
+
+    /* Text-only role styles (same technique as role editor) */
+    .role-text { display:inline-block; font-weight:700; font-size:0.9rem; line-height:1; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:currentColor; vertical-align:middle; }
+
+    /* solid: just color via inline style on element */
+    /* animated gradient sheen (three-stop) */
+    .anim-gradient-sheen{
+      --g1: var(--g1, #FF66CC);
+      --g2: var(--g2, #FF99CC);
+      --g3: var(--g3, var(--g1));
+      background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: sheenPan 4.6s cubic-bezier(.22,.9,.32,.99) infinite;
+    }
+    @keyframes sheenPan{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    /* holographic */
+    .holo-text{
+      background: conic-gradient(from 0deg, #ffd36b, #ff8bf2, #8da0ff, #7bf2d4, #ffd36b);
+      background-size: 400% 400%;
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      animation: holoFlow 6.5s linear infinite;
+      filter: saturate(1.05) contrast(1.02);
+    }
+    @keyframes holoFlow{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    /* small controls */
+    .role-select { padding:.35rem .5rem; border-radius:.5rem; border:1px solid #e6e6ee; background:white; min-width:180px; }
+    .assign-btn { padding:.35rem .6rem; border-radius:.5rem; background:#7c3aed; color:white; border:0; cursor:pointer; }
+
+    table td, table th { vertical-align: middle; }
+  </style>
+</head>
+
+<body class="min-h-screen p-6 relative overflow-y-auto">
+
+  <!-- Glow -->
+  <div class="blur-glow top-10 left-10"></div>
+  <div class="blur-glow bottom-10 right-10"></div>
+
+  <div class="max-w-6xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-500">
+          Manage Users
+        </h1>
+        <p class="text-sm text-gray-600 mt-1">View, assign roles (Discord-style) and manage users.</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <input id="searchInput" placeholder="Search by name or email..." class="px-4 py-2 rounded-xl border border-gray-200 shadow-sm w-80" />
+        <button id="refreshBtn" class="px-4 py-2 rounded-xl bg-white border border-gray-200 shadow-sm hover:scale-105">Refresh</button>
+        <a href="https://bookscoffeedreams.github.io/admin/admin-dashboard.html" class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white">Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card p-6">
+
+      <!-- Stats -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex gap-4 items-center small">
+          <div class="px-4 py-2 rounded-lg bg-white border shadow-sm text-sm">
+            Total users: <span id="totalUsers">0</span>
+          </div>
+          <div class="px-4 py-2 rounded-lg bg-white border shadow-sm text-sm">
+            With role: <span id="totalWithRole">0</span>
+          </div>
+          <div class="px-4 py-2 rounded-lg bg-white border shadow-sm text-sm">
+            No role: <span id="totalNoRole">0</span>
+          </div>
+        </div>
+        <div class="text-sm text-gray-500">Live list — changes apply immediately.</div>
+      </div>
+
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead class="text-sm text-gray-600">
+            <tr>
+              <th class="py-3 px-2 w-12">#</th>
+              <th class="py-3 px-2">User</th>
+              <th class="py-3 px-2">Email</th>
+              <th class="py-3 px-2">Role</th>
+              <th class="py-3 px-2">XP</th>
+              <th class="py-3 px-2">Assign Role</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="userModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md card">
+      <div class="flex justify-between items-start">
+        <h3 class="text-lg font-bold">User details</h3>
+        <button id="closeModal" class="text-gray-500">Close</button>
+      </div>
+      <div class="mt-4" id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Firebase (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore, collection, onSnapshot, query, orderBy,
+      updateDoc, doc, getDoc, serverTimestamp, getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    const tbody = document.getElementById("usersTbody");
+    const searchInput = document.getElementById("searchInput");
+    const totalUsersEl = document.getElementById("totalUsers");
+    const totalWithRoleEl = document.getElementById("totalWithRole");
+    const totalNoRoleEl = document.getElementById("totalNoRole");
+    const userModal = document.getElementById("userModal");
+    const modalContent = document.getElementById("modalContent");
+    const refreshBtn = document.getElementById("refreshBtn");
+
+    // Roles map (roleId -> roleData)
+    let rolesMap = {};
+    let allRoles = []; // array for dropdown ordering
+
+    // current users snapshot rows
+    let currentRows = [];
+
+    function escapeHTML(str) {
+      if (!str) return "";
+      return String(str).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+    }
+
+    function resolvePhoto(u) {
+      if (u.photoURL?.trim()) return u.photoURL;
+      if (u.profileURL?.trim()) return u.profileURL;
+      return "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+    }
+
+    // render a role badge using stored role object (or fallback)
+    function renderRoleBadgeForUser(user) {
+      const rid = user.roleId;
+      const r = rolesMap[rid];
+
+      if (!r) {
+        return `<span class="role-badge" style="background:#eef2ff;color:#374151">No role</span>`;
+      }
+
+      // avatar circle (first letter if no icon)
+      const avatarHtml = r.iconUrl
+        ? `<img src="${escapeHTML(r.iconUrl)}" class="role-avatar" style="width:20px;height:20px;border-radius:999px;object-fit:cover" />`
+        : `<span class="role-avatar" style="background:${escapeHTML(r.color || '#6b7280')}">${escapeHTML((r.name||'R').slice(0,1).toUpperCase())}</span>`;
+
+      // text label styled according to r.style
+      let textSpan = '';
+      if (r.style === 'solid') {
+        textSpan = `<span class="role-text" style="color: ${escapeHTML(r.color || '#000')};">${escapeHTML(r.name || 'Role')}</span>`;
+      } else if (r.style === 'gradient') {
+        // three-stop shimmer: set CSS variables inline
+        const g1 = r.gradientFrom || r.color || '#FF66CC';
+        const g2 = r.gradientTo || '#FF99CC';
+        textSpan = `<span class="role-text anim-gradient-sheen" style="--g1:${escapeHTML(g1)};--g2:${escapeHTML(g2)};--g3:${escapeHTML(g1)};">${escapeHTML(r.name || 'Role')}</span>`;
+      } else { // holo
+        textSpan = `<span class="role-text holo-text">${escapeHTML(r.name || 'Role')}</span>`;
+      }
+
+      // combine
+      return `<span class="role-badge" title="${escapeHTML(r.name || '')}">${avatarHtml}${textSpan}</span>`;
+    }
+
+    // listen auth + admin guard
+    onAuthStateChanged(auth, async (user) => {
+  if (!user) return location.href = "https://bookscoffeedreams.github.io/login.html";
+
+  // NEW SYSTEM: permission guard handles access
+  // Just start listeners
+  listenRoles();
+  listenUsers();
+});
+
+    // Roles: live listener for organizations/bcd/roles
+    function listenRoles() {
+      const rolesCol = collection(db, "organizations", "bcd", "roles");
+      // using onSnapshot is ideal, but modular onSnapshot import omitted earlier — we'll use onSnapshot via getDocs on every refresh for simplicity
+      // however we can attempt onSnapshot — but for code clarity here we'll poll once and set up a button to refresh
+      // Let's do a one-time load and also re-run on refresh click.
+
+      loadRoles();
+      refreshBtn.onclick = () => loadRoles();
+    }
+
+    async function loadRoles() {
+      try {
+        const snaps = await getDocs(collection(db, "organizations", "bcd", "roles"));
+        rolesMap = {};
+        allRoles = [];
+        snaps.forEach(d => {
+          const data = d.data();
+          const id = d.id;
+          const roleObj = {
+            id,
+            name: data.name || id,
+            style: data.style || 'solid',
+            color: data.color || '#6b7280',
+            gradientFrom: data.gradientId ? (data.gradientFrom || data.color) : (data.gradientFrom || data.color),
+            gradientTo: data.gradientTo || data.color,
+            iconUrl: data.iconUrl || null,
+            raw: data
+          };
+          // if role stored gradientId but not gradientFrom/gradientTo, try to derive from raw
+          if (data.gradientId && !roleObj.gradientFrom) {
+            // attempt to read gradient stops in either gradientFrom/gradientTo fields or fallback to first color
+            roleObj.gradientFrom = data.gradientFrom || data.color || '#FF66CC';
+            roleObj.gradientTo = data.gradientTo || data.color || '#FF99CC';
+          }
+          rolesMap[id] = roleObj;
+          allRoles.push(roleObj);
+        });
+        // re-render users with fresh role info
+        renderUsers(currentRows);
+      } catch (err) {
+        console.error("Failed to load roles:", err);
+        Swal.fire('Error','Failed to load roles. Check console.','error');
+      }
+    }
+
+    // Users: listen to users collection
+    function listenUsers() {
+      const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+      onSnapshot(q, (snapshot) => {
+        const rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        currentRows = rows;
+        renderUsers(rows);
+      }, (err) => {
+        console.error("Users snapshot error:", err);
+        Swal.fire('Error','Failed to listen users: '+err.message,'error');
+      });
+    }
+
+    // render rows
+    function renderUsers(rows) {
+      totalUsersEl.textContent = rows.length;
+      totalWithRoleEl.textContent = rows.filter(u => u.roleId).length;
+      totalNoRoleEl.textContent = rows.filter(u => !u.roleId).length;
+
+      const f = (searchInput.value || '').toLowerCase();
+
+      tbody.innerHTML = rows
+        .filter(u =>
+          (!f) ||
+          (u.name && u.name.toLowerCase().includes(f)) ||
+          (u.email && u.email.toLowerCase().includes(f))
+        )
+        .map((u, i) => {
+          const img = resolvePhoto(u);
+          // role badge (from rolesMap)
+          const roleBadge = renderRoleBadgeForUser(u);
+
+          // dropdown options markup
+          const options = [
+            `<option value="">— No role —</option>`,
+            ...allRoles.map(r => `<option value="${escapeHTML(r.id)}"${r.id === (u.roleId||'') ? ' selected' : ''}>${escapeHTML(r.name)}</option>`)
+          ].join('');
+
+          return `
+            <tr class="small border-b">
+              <td class="py-3 px-2">${i + 1}</td>
+
+              <td class="py-3 px-2">
+                <div class="flex items-center gap-3">
+                  <img src="${escapeHTML(img)}" class="w-10 h-10 rounded-full border object-cover">
+                  <div class="font-semibold">${escapeHTML(u.name || "—")}</div>
+                </div>
+              </td>
+
+              <td class="py-3 px-2">${escapeHTML(u.email || "—")}</td>
+
+              <td class="py-3 px-2">${roleBadge}</td>
+
+              <td class="py-3 px-2">${u.xp ?? 0}</td>
+
+              <td class="py-3 px-2 flex gap-2 items-center">
+                <select class="role-select" data-uid="${escapeHTML(u.id)}">
+                  ${options}
+                </select>
+                <button class="assign-btn" data-uid="${escapeHTML(u.id)}">Assign</button>
+                <button class="btn-view px-3 py-1 border rounded" data-uid="${escapeHTML(u.id)}">View</button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      attachEventHandlers();
+    }
+
+    // attach handlers to the generated DOM
+    function attachEventHandlers() {
+      // Assign buttons
+      document.querySelectorAll(".assign-btn").forEach(btn => {
+        btn.onclick = async () => {
+          const uid = btn.dataset.uid;
+          const sel = document.querySelector(`select.role-select[data-uid="${uid}"]`);
+          const chosenRoleId = sel?.value || null;
+          await assignRoleToUser(uid, chosenRoleId);
+        };
+      });
+
+      // View buttons
+      document.querySelectorAll(".btn-view").forEach(btn => {
+        btn.onclick = () => openModal(btn.dataset.uid);
+      });
+
+      // Enter-to-search already bound below
+    }
+
+    async function assignRoleToUser(uid, roleId) {
+      const displayName = (currentRows.find(r => r.id === uid)?.name) || uid;
+      const label = roleId ? (rolesMap[roleId]?.name || roleId) : 'No role';
+      const ok = await Swal.fire({
+        title: `Assign ${label}?`,
+        text: `Set role for ${displayName} → ${label}`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, assign',
+        confirmButtonColor: '#7c3aed'
+      });
+      if (!ok.isConfirmed) return;
+
+      try {
+        const userRef = doc(db, "users", uid);
+        // store only roleId (your chosen option A)
+        await updateDoc(userRef, {
+          roleId: roleId || null,
+          updatedAt: serverTimestamp()
+        });
+        Swal.fire('Done', `Assigned role: ${label}`, 'success');
+      } catch (err) {
+        console.error("Assign failed:", err);
+        Swal.fire('Error', 'Assign failed — check console', 'error');
+      }
+    }
+
+    async function openModal(uid) {
+      try {
+        const snap = await getDoc(doc(db, "users", uid));
+        const u = snap.exists() ? snap.data() : null;
+        if (!u) return Swal.fire('Not found', 'User doc missing', 'error');
+
+        const img = resolvePhoto(u);
+        // role display
+        const roleHtml = renderRoleBadgeForUser(u);
+
+        modalContent.innerHTML = `
+          <div class="flex gap-4 items-center">
+            <img src="${escapeHTML(img)}" class="w-16 h-16 rounded-full border object-cover">
+            <div>
+              <div class="font-bold text-lg">${escapeHTML(u.name)}</div>
+              <div class="text-sm text-gray-600">${escapeHTML(u.email)}</div>
+              <div class="mt-1">${roleHtml}</div>
+            </div>
+          </div>
+
+          <div class="mt-4 text-sm">
+            <p><strong>XP:</strong> ${u.xp ?? 0}</p>
+            <p><strong>Badges:</strong> ${(u.badges || []).join(", ")}</p>
+            <p><strong>UID:</strong> <span class="text-xs text-gray-500">${escapeHTML(uid)}</span></p>
+            <p><strong>RoleId:</strong> <span class="text-xs text-gray-500">${escapeHTML(u.roleId || '')}</span></p>
+          </div>
+
+          <div class="mt-4 flex gap-2">
+            <button id="modalAssignBtn" class="px-3 py-2 rounded bg-indigo-500 text-white">Assign role</button>
+            <button id="modalRemoveBtn" class="px-3 py-2 rounded border">Remove role</button>
+          </div>
+        `;
+
+        document.getElementById("modalAssignBtn").onclick = async () => {
+          // quick assign first role (open a small select)
+          const pick = await Swal.fire({
+            title: 'Select role to assign',
+            input: 'select',
+            inputOptions: Object.fromEntries(allRoles.map(r => [r.id, r.name])),
+            showCancelButton: true,
+            inputPlaceholder: 'Choose role'
+          });
+          if (!pick.isConfirmed) return;
+          await assignRoleToUser(uid, pick.value);
+          userModal.classList.add("hidden");
+          userModal.classList.remove("flex");
+        };
+
+        document.getElementById("modalRemoveBtn").onclick = async () => {
+          await assignRoleToUser(uid, null);
+          userModal.classList.add("hidden");
+          userModal.classList.remove("flex");
+        };
+
+        userModal.classList.remove("hidden");
+        userModal.classList.add("flex");
+      } catch (err) {
+        console.error("Open modal failed:", err);
+        Swal.fire('Error', 'Failed to open modal', 'error');
+      }
+    }
+
+    document.getElementById("closeModal").onclick = () => {
+      userModal.classList.add("hidden");
+      userModal.classList.remove("flex");
+    };
+
+    // search handler
+    searchInput.oninput = () => renderUsers(currentRows);
+
+    // init: nothing to do — auth listener will trigger
+  </script>
+  <script type="module">
+  import { requirePermission } from "/admin/js/guard-v10.js";
+  await requirePermission("manageUsers"); // ONLY ADMINS & ROLES WITH manageUsers CAN ACCESS
+</script>
+</body>
+</html>

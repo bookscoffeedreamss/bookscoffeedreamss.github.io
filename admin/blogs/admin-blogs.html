@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Blogs | Books Coffee and Dreams</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom right, #f5f3ff, #ede9fe);
+      color: #1f1f1f;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    input::placeholder, textarea::placeholder {
+      font-style: italic;
+      color: #9ca3af;
+    }
+    .tag {
+      background-color: #e9d5ff;
+      color: #6b21a8;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body class="relative overflow-x-hidden">
+
+<header class="flex items-center justify-between px-6 py-4 shadow-md backdrop-blur bg-white/80 fixed w-full z-50">
+  <h1 class="text-2xl font-bold text-purple-600">Books Coffee and Dreams</h1>
+  <div class="flex items-center gap-4">
+    <button id="createPostBtn" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">➕ Create New Post</button>
+    <div id="user-profile" class="w-10 h-10 rounded-full bg-gray-300 overflow-hidden"></div>
+  </div>
+</header>
+
+<main class="pt-28 px-6 md:px-16 max-w-6xl mx-auto">
+
+  <!-- Blog Form -->
+  <div id="formContainer" class="mb-10 hidden bg-white rounded-2xl shadow-xl p-6 border border-purple-200 transition">
+    <h2 id="formTitle" class="text-3xl font-bold text-purple-700 mb-4 text-center">✍️ Create a New Blog</h2>
+    <form id="blogForm" class="space-y-4">
+      <input required type="text" id="title" placeholder="Blog Title" class="w-full p-3 rounded-lg border border-purple-300 bg-purple-50 text-black placeholder-gray-500"/>
+      <input required type="text" id="description" placeholder="Short Description" class="w-full p-3 rounded-lg border border-purple-300 bg-purple-50 text-black placeholder-gray-500"/>
+      <textarea required id="content" rows="6" placeholder="Write your full content here..." class="w-full p-3 rounded-lg border border-purple-300 bg-purple-50 text-black placeholder-gray-500"></textarea>
+      <input type="text" id="tags" placeholder="Tags (comma separated)" class="w-full p-3 rounded-lg border border-purple-300 bg-purple-50 text-black placeholder-gray-500"/>
+      <input type="file" id="image" accept="image/*" class="w-full bg-purple-100 border border-purple-300 text-black p-2 rounded-lg"/>
+      <label class="flex items-center gap-2 text-sm text-purple-600">
+        <input type="checkbox" id="featured" class="accent-purple-500 scale-125"/>
+        Mark as Featured
+      </label>
+      <button type="submit" class="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-semibold text-lg transition">📤 Publish Blog</button>
+    </form>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+    <input type="text" id="searchInput" placeholder="Search blogs..." class="w-full sm:w-1/3 p-3 rounded-lg border border-purple-300 bg-purple-50"/>
+    <select id="filterFeatured" class="p-3 rounded-lg border border-purple-300 bg-purple-50">
+      <option value="all">All Blogs</option>
+      <option value="featured">Featured</option>
+      <option value="nonFeatured">Non-Featured</option>
+    </select>
+  </div>
+
+  <!-- Blog List -->
+  <div id="blogContainer" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+  <!-- Pagination -->
+  <div class="flex justify-center items-center gap-4 mt-8">
+    <button id="prevPage" class="px-3 py-1 bg-purple-200 rounded hover:bg-purple-300">Prev</button>
+    <span id="pageInfo" class="font-semibold text-purple-700"></span>
+    <button id="nextPage" class="px-3 py-1 bg-purple-200 rounded hover:bg-purple-300">Next</button>
+  </div>
+
+</main>
+
+<footer class="mt-20 px-6 py-8 text-center text-gray-600 bg-purple-50">
+  © 2025 Books Coffee and Dreams. All rights reserved.
+</footer>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+  authDomain: "bcd-discord.firebaseapp.com",
+  databaseURL: "https://bcd-discord-default-rtdb.firebaseio.com",
+  projectId: "bcd-discord",
+  storageBucket: "bcd-discord.firebasestorage.app",
+  messagingSenderId: "278895155371",
+  appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+  measurementId: "G-6Q46Z9ZF0D"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+  auth.onAuthStateChanged(async (user) => {
+  const profileBox = document.getElementById("user-profile");
+
+  if (!user) {
+    profileBox.innerHTML = "";
+    return;
+  }
+
+  // Load user data from Firestore
+  const snap = await db.collection("users").doc(user.uid).get();
+  const data = snap.exists ? snap.data() : {};
+
+  const defaultPhoto =
+    "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
+
+  const photo =
+    data.photoURL ||
+    data.profileURL ||
+    user.photoURL ||
+    defaultPhoto;
+
+  profileBox.innerHTML = `<img src="${photo}" class="w-full h-full object-cover">`;
+});
+
+const formContainer = document.getElementById('formContainer');
+const createPostBtn = document.getElementById('createPostBtn');
+const blogForm = document.getElementById('blogForm');
+const blogContainer = document.getElementById('blogContainer');
+const searchInput = document.getElementById('searchInput');
+const filterFeatured = document.getElementById('filterFeatured');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const pageInfo = document.getElementById('pageInfo');
+
+let allBlogs = [];
+let filteredBlogs = [];
+let editBlogId = null;
+let currentPage = 1;
+const blogsPerPage = 6;
+
+// Toggle form
+createPostBtn.addEventListener('click', () => {
+  formContainer.classList.toggle('hidden');
+  blogForm.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('formTitle').innerText = editBlogId ? "✏️ Edit Blog" : "✍️ Create a New Blog";
+  blogForm.querySelector('button').innerText = editBlogId ? "💾 Save Changes" : "📤 Publish Blog";
+});
+
+// Render blog card
+function createCard(blog){
+  const date = blog.createdAt?.toDate().toLocaleDateString() || "Unknown";
+  const tagsHTML = (blog.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  return `<div class="bg-white shadow-xl rounded-2xl overflow-hidden p-4 relative transition hover:shadow-2xl">
+    ${blog.isFeatured?'<span class="absolute top-2 left-2 bg-yellow-200 text-yellow-800 px-2 py-1 rounded text-xs font-bold">🌟 Featured</span>':''}
+    <img src="${blog.imageUrl||'https://via.placeholder.com/400x200'}" class="h-40 w-full object-cover rounded mb-2"/>
+    <h3 class="text-lg font-semibold text-purple-700 mb-1">${blog.title}</h3>
+    <p class="text-gray-600 text-sm mb-2">${blog.description}</p>
+    <div class="mb-2">${tagsHTML}</div>
+    <div class="flex justify-between gap-2 mt-2">
+      <button onclick="editBlog('${blog.id}')" class="px-2 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition">Edit</button>
+      <button onclick="deleteBlog('${blog.id}')" class="px-2 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition">Delete</button>
+    </div>
+  </div>`;
+}
+
+// Load Blogs
+async function loadBlogs(){
+  const snapshot = await db.collection("blogs").orderBy("createdAt","desc").get();
+  allBlogs = snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
+  filteredBlogs = [...allBlogs];
+  currentPage = 1;
+  renderBlogs();
+}
+
+// Render Blogs with Pagination
+function renderBlogs(){
+  const start = (currentPage-1)*blogsPerPage;
+  const end = start+blogsPerPage;
+  const blogsToShow = filteredBlogs.slice(start,end);
+  blogContainer.innerHTML = blogsToShow.map(createCard).join('');
+  pageInfo.innerText = `Page ${currentPage} of ${Math.ceil(filteredBlogs.length/blogsPerPage)}`;
+}
+
+// Edit Blog
+function editBlog(id){
+  const blog = allBlogs.find(b=>b.id===id);
+  if(!blog) return;
+  editBlogId=id;
+  formContainer.classList.remove('hidden');
+  document.getElementById('title').value=blog.title;
+  document.getElementById('description').value=blog.description;
+  document.getElementById('content').value=blog.content;
+  document.getElementById('tags').value=(blog.tags||[]).join(', ');
+  document.getElementById('featured').checked=blog.isFeatured||false;
+  document.getElementById('formTitle').innerText="✏️ Edit Blog";
+  blogForm.querySelector('button').innerText="💾 Save Changes";
+  blogForm.scrollIntoView({behavior:'smooth'});
+}
+
+// Delete Blog
+function deleteBlog(id){
+  Swal.fire({title:'Are you sure?',text:"This will permanently delete the blog!",icon:'warning',showCancelButton:true,confirmButtonColor:'#d33',cancelButtonColor:'#3085d6',confirmButtonText:'Yes, delete it!'})
+  .then(async result=>{
+    if(result.isConfirmed){
+      await db.collection("blogs").doc(id).delete();
+      allBlogs=allBlogs.filter(b=>b.id!==id);
+      filteredBlogs=filteredBlogs.filter(b=>b.id!==id);
+      renderBlogs();
+      Swal.fire('Deleted!','Blog has been deleted.','success');
+    }
+  });
+}
+
+// Submit Blog
+blogForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const user=auth.currentUser;
+  if(!user) return;
+  const title=document.getElementById("title").value.trim();
+  const description=document.getElementById("description").value.trim();
+  const content=document.getElementById("content").value.trim();
+  const tags=document.getElementById("tags").value.split(',').map(t=>t.trim()).filter(Boolean);
+  const isFeatured=document.getElementById("featured").checked;
+  const imageFile=document.getElementById("image").files[0];
+
+  let imageUrl="";
+  if(imageFile){
+    const formData=new FormData();
+    formData.append("image",imageFile);
+    const res=await fetch("https://api.imgbb.com/1/upload?key=45b5b90328ebfb84f1ffa8954fada437",{method:"POST",body:formData});
+    const data=await res.json();
+    imageUrl=data.data.url;
+  }
+
+  try{
+    if(editBlogId){
+      const updateData={title,description,content,tags,isFeatured};
+      if(imageUrl) updateData.imageUrl=imageUrl;
+      await db.collection("blogs").doc(editBlogId).update(updateData);
+      Swal.fire('Success','Blog updated successfully','success');
+      editBlogId=null;
+    } else {
+      await db.collection("blogs").add({title,description,content,tags,isFeatured,imageUrl,likes:0,views:0,author:user.displayName||user.email,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      Swal.fire('Success','Blog created successfully','success');
+    }
+    blogForm.reset();
+    formContainer.classList.add('hidden');
+    loadBlogs();
+  } catch(err){console.error(err);Swal.fire('Error','Failed to save blog','error');}
+});
+
+// Search & Filter
+searchInput.addEventListener('input',applyFilters);
+filterFeatured.addEventListener('change',applyFilters);
+function applyFilters(){
+  const search=searchInput.value.toLowerCase();
+  const filter=filterFeatured.value;
+  filteredBlogs=allBlogs.filter(blog=>{
+    const matchesSearch=blog.title.toLowerCase().includes(search)||blog.description.toLowerCase().includes(search);
+    const matchesFilter=filter==='all'||(filter==='featured'&&blog.isFeatured)||(filter==='nonFeatured'&&!blog.isFeatured);
+    return matchesSearch && matchesFilter;
+  });
+  currentPage=1;
+  renderBlogs();
+}
+
+// Pagination
+prevPageBtn.addEventListener('click',()=>{if(currentPage>1){currentPage--;renderBlogs();}});
+nextPageBtn.addEventListener('click',()=>{if(currentPage<Math.ceil(filteredBlogs.length/blogsPerPage)){currentPage++;renderBlogs();}});
+</script>
+  <script src="/admin/guard.js"></script>
+<script>
+  requirePermission("manageContent").then(info => {
+    loadBlogs(); // AFTER permission passes
+  });
+</script>
+</body>
+</html>

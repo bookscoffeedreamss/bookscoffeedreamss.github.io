@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Profile | Books Coffee and Dreams</title>
+
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <link href="/logo.png" rel="icon">
+  <link href="/logo.png" rel="apple-touch-icon">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .blur-glow {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle at center, rgba(168,85,247,0.40), transparent);
+      filter: blur(80px);
+      z-index: -1;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 1rem;
+      box-shadow: 0 10px 35px rgba(128, 90, 213, 0.15);
+      border: 1px solid rgba(0,0,0,0.05);
+      animation: fadeInUp .6s ease;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .gradient-title {
+      background: linear-gradient(to right, #a855f7, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .role-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      display: inline-block;
+    }
+    .role-admin { background: linear-gradient(to right,#f97316,#a855f7); color:white; }
+    .role-staff { background: linear-gradient(to right,#7c3aed,#a855f7); color:white; }
+    .role-user { background: #e9d5ff; color:#5b21b6; }
+    .badge-chip {
+      background: #f3e8ff;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b21a8;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-white via-purple-100 to-indigo-100 min-h-screen flex items-center justify-center p-6 relative overflow-y-auto text-gray-800">
+
+  <!-- Glow Blobs -->
+  <div class="blur-glow top-10 left-10"></div>
+  <div class="blur-glow bottom-10 right-10"></div>
+
+  <!-- Profile Card -->
+  <div class="card max-w-md w-full p-8 text-center space-y-6 my-12 relative">
+
+    <!-- Back Arrow -->
+    <button onclick="history.back()"
+      class="absolute top-4 left-4 hover:scale-110 transition">
+      <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/back-arrow-navigation.svg"
+          class="w-5 h-5" />
+    </button>
+
+    <!-- Settings Button -->
+    <a href="settings.html" class="absolute top-4 right-4 hover:scale-110 transition">
+      <img src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/settings_icon.png" class="w-6 h-6" />
+    </a>
+
+    <!-- Profile Picture -->
+    <img id="userPhoto"
+      class="mx-auto w-32 h-32 rounded-full border-4 border-purple-400 shadow-lg object-cover mb-4 transition hover:scale-105"
+      src="">
+
+    <!-- User Name -->
+    <h1 id="userName" class="text-3xl font-bold gradient-title">Loading...</h1>
+
+    <!-- Email -->
+    <p id="userEmail" class="text-gray-600 text-sm">Loading...</p>
+
+    <!-- Role -->
+    <div id="userRole" class="mt-2"></div>
+
+    <!-- XP -->
+    <div class="mt-4">
+      <p class="font-semibold text-lg">XP: <span id="userXP">0</span></p>
+    </div>
+
+    <!-- Badges Section -->
+    <div class="mt-4">
+      <h3 class="font-bold text-purple-700 mb-2">Your Badges</h3>
+      <div id="badgeContainer" class="flex flex-wrap gap-2 justify-center text-sm"></div>
+    </div>
+
+    <!-- Logout Button -->
+    <button id="logoutBtn"
+      class="w-full mt-6 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold py-3 rounded-xl hover:scale-105 transition">
+      Logout
+    </button>
+
+  </div>
+
+  <!-- Firebase Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Load user data
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : {};
+
+      // Photo priority
+      const finalPhoto =
+        (data.photoURL && data.photoURL.trim() !== "") ? data.photoURL :
+        (data.profileURL && data.profileURL.trim() !== "") ? data.profileURL :
+        "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png";
+
+      document.getElementById("userPhoto").src = finalPhoto;
+      document.getElementById("userName").textContent = data.name || user.displayName || "Anonymous";
+      document.getElementById("userEmail").textContent = data.email || user.email || "No email";
+
+      // Role Badge
+      const role = data.role || "user";
+      let roleClass = role === "admin" ? "role-admin"
+                    : role === "staff" ? "role-staff"
+                    : "role-user";
+      document.getElementById("userRole").innerHTML =
+        `<span class="role-badge ${roleClass}">${role}</span>`;
+
+      // XP
+      document.getElementById("userXP").textContent = data.xp ?? 0;
+
+      // Badges
+      const badgeBox = document.getElementById("badgeContainer");
+      badgeBox.innerHTML = "";
+      if (Array.isArray(data.badges) && data.badges.length > 0) {
+        data.badges.forEach(b => {
+          badgeBox.innerHTML += `<span class="badge-chip">${b}</span>`;
+        });
+      } else {
+        badgeBox.innerHTML = `<p class="text-gray-500 text-sm">No badges yet.</p>`;
+      }
+    });
+
+    // Logout
+    document.getElementById("logoutBtn").onclick = () => {
+      signOut(auth).then(() => window.location.href = "login.html");
+    };
+  </script>
+
+</body>
+</html>

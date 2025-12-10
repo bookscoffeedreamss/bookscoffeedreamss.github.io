@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lectures Editor • BCD Admin</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Cloudinary -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <style>
+    :root{ --muted:#6b7280; --card-bg:#0f172a; }
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#06060a; color:#e6eef8; margin:0;}
+    .container{max-width:1200px;margin:28px auto;padding:18px}
+    .card{background:linear-gradient(180deg,#0b0d10,#0f1216);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.03)}
+    .muted{color:var(--muted)}
+    input, textarea, select { background:#0b0b0b; border:1px solid rgba(255,255,255,0.04); color:#fff; padding:8px 10px; border-radius:8px; width:100%; }
+    .btn { padding:8px 12px; border-radius:8px; font-weight:700; cursor:pointer; }
+    .btn-primary{ background:linear-gradient(90deg,#4C8CFF,#2ECC71); color:#fff; }
+    .btn-ghost{ background:transparent; border:1px solid rgba(255,255,255,0.04); color:#fff; }
+    .list-item{ display:flex; gap:12px; align-items:center; justify-content:space-between; padding:10px; border-radius:10px; background:rgba(255,255,255,0.02); margin-bottom:10px;}
+    .thumb{ width:96px; height:64px; object-fit:cover; border-radius:8px; background:#111 }
+    .chip{ background:#111; padding:6px 10px; border-radius:999px; color:var(--muted); font-weight:600 }
+    .small{font-size:13px}
+    @media (max-width:900px){ .row-2 { flex-direction:column } .thumb{ width:100%; height:160px } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-extrabold">Lectures Editor</h1>
+          <div class="muted">Add / edit / remove lecture videos for course chapters</div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="small muted mr-2">Course ID</div>
+          <div id="courseIdDisplay" class="chip">—</div>
+          <button id="saveBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk mr-2"></i>Save</button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-3 gap-4">
+        <!-- left: subject & chapter -->
+        <div class="md:col-span-1">
+          <label class="small muted">Subject</label>
+          <select id="subjectSelect" class="mt-2"></select>
+
+          <div class="mt-3">
+            <label class="small muted">Chapter</label>
+            <div class="mt-2 flex gap-2">
+              <select id="chapterSelect" class="flex-1"></select>
+              <button id="createChapterBtn" class="btn btn-ghost"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="mt-2 flex gap-2">
+              <input id="newChapterName" placeholder="New chapter title" />
+              <button id="createChapterConfirm" class="btn btn-primary">Add</button>
+            </div>
+          </div>
+
+          <div class="mt-4 card">
+            <div class="font-bold">Quick Actions</div>
+            <div class="muted small mt-2">Quick add a lecture to the selected chapter</div>
+            <div class="mt-3">
+              <input id="quickTitle" placeholder="Lecture title" />
+              <input id="quickVideoURL" placeholder="Video URL (optional)" class="mt-2" />
+              <div class="flex gap-2 mt-2">
+                <button id="quickUpload" class="btn btn-ghost"><i class="fa-solid fa-cloud-upload-alt"></i> Upload Video</button>
+                <button id="quickAddBtn" class="btn btn-primary">Quick Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- center: list of lectures -->
+        <div class="md:col-span-2">
+          <div class="card mb-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold">Lectures for chapter</div>
+                <div id="chapterInfo" class="muted small mt-1">Open a chapter to manage lectures</div>
+              </div>
+              <div class="flex gap-2">
+                <button id="uploadVideoBtn" class="btn btn-ghost"><i class="fa-solid fa-video mr-2"></i>Upload Video</button>
+                <button id="uploadThumbBtn" class="btn btn-ghost"><i class="fa-solid fa-image mr-2"></i>Upload Thumb</button>
+                <button id="addLectureBtn" class="btn btn-primary"><i class="fa-solid fa-plus mr-2"></i>Add Lecture</button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-3" id="lecturesList">
+              <!-- dynamic -->
+            </div>
+
+            <div class="hr mt-4"></div>
+
+            <!-- add/edit form -->
+            <div class="mt-4 grid grid-cols-1 gap-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input id="lectureTitle" placeholder="Lecture Title" />
+                <input id="lectureURL" placeholder="Video URL" />
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input id="lectureDuration" placeholder="Duration (e.g. 00:45:23)" />
+                <input id="lectureDate" placeholder="Date (YYYY-MM-DD)" />
+                <input id="lectureThumb" placeholder="Thumbnail URL" />
+              </div>
+
+              <div>
+                <input id="lectureConcepts" placeholder="Concepts (comma separated)" />
+              </div>
+
+              <div class="flex gap-2">
+                <input id="attachmentURL" placeholder="Attachment (PDF) URL" />
+                <button id="uploadAttachmentBtn" class="btn btn-ghost">Upload PDF</button>
+                <button id="addAttachmentBtn" class="btn btn-primary">Attach</button>
+              </div>
+
+              <div id="attachmentsList" class="muted small mt-2"></div>
+
+              <div class="flex gap-2 justify-end">
+                <button id="clearFormBtn" class="btn btn-ghost">Clear</button>
+                <button id="saveLectureBtn" class="btn btn-primary">Save Lecture</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="muted small mt-3">Notes: Use the subject/chapter selects to pick where lectures are stored. This editor writes to <code>courses/{id}.content.subjects[...] .chapters[...].lectures</code></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { requirePermission } from "/admin/guard-v10.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+
+    // ---------- CONFIG (same as your other admin pages) ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Cloudinary config
+    const CLOUD_NAME = 'dkxuilgai';
+    const UPLOAD_PRESET = 'bcd_courses';
+    function openCloudinaryWidget(opts = {}, cb){
+      const widget = cloudinary.createUploadWidget({
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        sources: ["local","url","camera"],
+        multiple: !!opts.multiple,
+        resourceType: opts.resourceType || 'auto',
+        clientAllowedFormats: opts.clientAllowedFormats || undefined
+      }, (err, result) => {
+        if (!err && result && result.event === 'success') cb(result.info);
+        if (err) { console.error('Cloudinary error', err); Swal.fire('Upload error', err.message || 'Upload failed', 'error'); }
+      });
+      widget.open();
+    }
+
+    // ---------- state ----------
+    let courseId = null;
+    let CONTENT = { subjects: {} };
+    let SELECTED_SUBJECT = null;
+    let SELECTED_CHAPTER = null; // chapter id
+    let currentChapterIndex = null;
+    let saveLock = false;
+    let isDirty = false;
+
+    // ---------- DOM ----------
+    const courseIdDisplay = document.getElementById('courseIdDisplay');
+    const subjectSelect = document.getElementById('subjectSelect');
+    const chapterSelect = document.getElementById('chapterSelect');
+    const lecturesList = document.getElementById('lecturesList');
+    const chapterInfo = document.getElementById('chapterInfo');
+
+    // left quick
+    const newChapterName = document.getElementById('newChapterName');
+    const createChapterConfirm = document.getElementById('createChapterConfirm');
+
+    // quick add
+    const quickTitle = document.getElementById('quickTitle');
+    const quickVideoURL = document.getElementById('quickVideoURL');
+    const quickUpload = document.getElementById('quickUpload');
+    const quickAddBtn = document.getElementById('quickAddBtn');
+
+    // add/edit form
+    const lectureTitle = document.getElementById('lectureTitle');
+    const lectureURL = document.getElementById('lectureURL');
+    const lectureDuration = document.getElementById('lectureDuration');
+    const lectureDate = document.getElementById('lectureDate');
+    const lectureThumb = document.getElementById('lectureThumb');
+    const lectureConcepts = document.getElementById('lectureConcepts');
+    const uploadVideoBtn = document.getElementById('uploadVideoBtn');
+    const uploadThumbBtn = document.getElementById('uploadThumbBtn');
+
+    const attachmentURL = document.getElementById('attachmentURL');
+    const uploadAttachmentBtn = document.getElementById('uploadAttachmentBtn');
+    const addAttachmentBtn = document.getElementById('addAttachmentBtn');
+    const attachmentsList = document.getElementById('attachmentsList');
+
+    const addLectureBtn = document.getElementById('addLectureBtn');
+    const saveLectureBtn = document.getElementById('saveLectureBtn');
+    const clearFormBtn = document.getElementById('clearFormBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // helpers
+    function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+    function markDirty(){ isDirty = true; }
+    function parseCSV(s = ''){ return String(s||'').split(',').map(x=>x.trim()).filter(Boolean); }
+
+    // ---------- render ----------
+    function renderSubjectSelect(){
+      subjectSelect.innerHTML = '';
+      const subs = CONTENT.subjects || {};
+      Object.keys(subs).forEach(id=>{
+        const o = document.createElement('option');
+        o.value = id;
+        o.textContent = subs[id].name || 'Unnamed';
+        subjectSelect.appendChild(o);
+      });
+      if(subjectSelect.options.length){
+        if(!SELECTED_SUBJECT) SELECTED_SUBJECT = subjectSelect.options[0].value;
+        subjectSelect.value = SELECTED_SUBJECT;
+      } else {
+        SELECTED_SUBJECT = null;
+      }
+      renderChapterSelect();
+    }
+
+    function renderChapterSelect(){
+      chapterSelect.innerHTML = '';
+      if(!SELECTED_SUBJECT){ chapterInfo.textContent = 'No subject selected'; return; }
+      const subj = CONTENT.subjects[SELECTED_SUBJECT];
+      subj.chapters = subj.chapters || [];
+      subj.chapters.forEach((ch, idx)=>{
+        const o = document.createElement('option');
+        o.value = ch.id;
+        o.textContent = ch.title || `Chapter ${idx+1}`;
+        chapterSelect.appendChild(o);
+      });
+      if(chapterSelect.options.length){
+        if(!SELECTED_CHAPTER) { SELECTED_CHAPTER = chapterSelect.options[0].value; currentChapterIndex = 0; }
+        chapterSelect.value = SELECTED_CHAPTER;
+        currentChapterIndex = subj.chapters.findIndex(c=>c.id === SELECTED_CHAPTER);
+        chapterInfo.textContent = `${subj.name} — ${subj.chapters[currentChapterIndex]?.title || '—'}`;
+      } else {
+        SELECTED_CHAPTER = null; currentChapterIndex = null;
+        chapterInfo.textContent = 'No chapters in selected subject';
+      }
+      renderLecturesList();
+    }
+
+    function renderLecturesList(){
+      lecturesList.innerHTML = '';
+      attachmentsList.innerHTML = '';
+      if(!SELECTED_SUBJECT || currentChapterIndex == null){ lecturesList.innerHTML = '<div class="muted">Open a chapter to edit lectures</div>'; return; }
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const arr = ch.lectures || [];
+      if(!arr.length) { lecturesList.innerHTML = '<div class="muted">No lectures yet</div>'; return; }
+      arr.forEach((l, idx)=>{
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <img src="${l.thumb||''}" class="thumb" onerror="this.style.display='none'"/>
+            <div>
+              <div style="font-weight:700">${l.title || 'Lecture'}</div>
+              <div class="muted small">${l.url||''}</div>
+              <div class="muted small mt-1">Duration: ${l.duration||'—'} · Date: ${l.date||'—'}</div>
+              <div class="muted small mt-1">Concepts: ${(l.concepts||[]).slice(0,5).join(', ')}</div>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost" data-idx="${idx}" data-action="edit"><i class="fa-solid fa-edit"></i></button>
+            <button class="btn btn-ghost" data-idx="${idx}" data-action="attach"><i class="fa-solid fa-paperclip"></i></button>
+            <button class="btn btn-ghost" data-idx="${idx}" data-action="copy"><i class="fa-solid fa-copy"></i></button>
+            <button class="btn btn-ghost danger" data-idx="${idx}" data-action="delete"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        lecturesList.appendChild(div);
+      });
+
+      // attach handlers
+      lecturesList.querySelectorAll('button').forEach(b=>{
+        b.onclick = () => {
+          const idx = +b.dataset.idx;
+          const action = b.dataset.action;
+          if(action === 'edit') openEditLecture(idx);
+          else if(action === 'delete') { Swal.fire({title:'Delete lecture?',icon:'warning',showCancelButton:true}).then(res=>{ if(res.isConfirmed){ removeLecture(idx); } }); }
+          else if(action === 'attach') openAttachments(idx);
+          else if(action === 'copy'){ copyLectureToForm(idx); Swal.fire({icon:'success',title:'Copied',timer:900,showConfirmButton:false}); }
+        };
+      });
+    }
+
+    // ---------- lecture CRUD ----------
+    function openEditLecture(index){
+      if(!SELECTED_SUBJECT || currentChapterIndex == null) return Swal.fire('Open chapter','Open a chapter to edit','warning');
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const l = ch.lectures[index];
+      lectureTitle.value = l.title || '';
+      lectureURL.value = l.url || '';
+      lectureDuration.value = l.duration || '';
+      lectureDate.value = l.date || '';
+      lectureThumb.value = l.thumb || '';
+      lectureConcepts.value = (l.concepts||[]).join(', ');
+      // store editing meta
+      saveLectureBtn.dataset.editing = index;
+      markDirty();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function copyLectureToForm(index){
+      if(!SELECTED_SUBJECT || currentChapterIndex == null) return;
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const l = ch.lectures[index];
+      lectureTitle.value = l.title || '';
+      lectureURL.value = l.url || '';
+      lectureDuration.value = l.duration || '';
+      lectureDate.value = l.date || '';
+      lectureThumb.value = l.thumb || '';
+      lectureConcepts.value = (l.concepts||[]).join(', ');
+      saveLectureBtn.removeAttribute('data-editing');
+      markDirty();
+    }
+
+    function removeLecture(index){
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      ch.lectures.splice(index,1);
+      renderLecturesList(); markDirty();
+    }
+
+    function openAttachments(index){
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const l = ch.lectures[index];
+      const arr = l.attachments || [];
+      if(!arr.length) return Swal.fire('No attachments','This lecture has no attachments','info');
+      Swal.fire({
+        title: 'Attachments',
+        html: `<div style="text-align:left">${arr.map(a=>`<div style="margin:6px 0"><a href="${a.url}" target="_blank">${a.title || a.url}</a></div>`).join('')}</div>`,
+        width:600
+      });
+    }
+
+    // adding / saving lecture from form
+    saveLectureBtn.onclick = () => {
+      if(!SELECTED_SUBJECT || currentChapterIndex == null) return Swal.fire('Open chapter','Open a chapter to add/save lecture','warning');
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const editing = saveLectureBtn.dataset.editing;
+      const lecture = {
+        id: editing != null ? ch.lectures[editing].id : uid('lec'),
+        title: lectureTitle.value.trim() || 'Lecture',
+        url: lectureURL.value.trim() || '',
+        duration: lectureDuration.value.trim() || '',
+        date: lectureDate.value.trim() || '',
+        thumb: lectureThumb.value.trim() || '',
+        concepts: parseCSV(lectureConcepts.value),
+        attachments: (editing != null ? ch.lectures[editing].attachments || [] : [])
+      };
+      if(editing != null){
+        ch.lectures[editing] = lecture;
+        delete saveLectureBtn.dataset.editing;
+      } else {
+        ch.lectures = ch.lectures || [];
+        ch.lectures.push(lecture);
+      }
+      clearForm();
+      renderLecturesList(); markDirty();
+    };
+
+    addLectureBtn.onclick = () => {
+      // alias to saveLecture (keeps form behavior)
+      saveLectureBtn.click();
+    };
+
+    function copyAttachmentsToUI(arr = []){
+      attachmentsList.innerHTML = '';
+      if(!arr.length) { attachmentsList.textContent = 'No attachments'; return; }
+      arr.forEach(a=>{
+        const d = document.createElement('div'); d.innerHTML = `<a href="${a.url}" target="_blank" class="muted small">${a.title||a.url}</a>`; attachmentsList.appendChild(d);
+      });
+    }
+
+    // clear form
+    clearFormBtn.onclick = () => { clearForm(); };
+
+    function clearForm(){
+      lectureTitle.value=''; lectureURL.value=''; lectureDuration.value=''; lectureDate.value=''; lectureThumb.value=''; lectureConcepts.value=''; attachmentURL.value='';
+      saveLectureBtn.removeAttribute('data-editing');
+      attachmentsList.innerHTML = '';
+    }
+
+    // quick add
+    quickUpload.onclick = () => {
+      openCloudinaryWidget({ resourceType:'video' }, info => { quickVideoURL.value = info.secure_url; Swal.fire('Uploaded','Video uploaded','success'); });
+    };
+    quickAddBtn.onclick = () => {
+      if(!SELECTED_SUBJECT || currentChapterIndex == null) return Swal.fire('Open chapter','Open a chapter to add lecture','warning');
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      ch.lectures = ch.lectures || [];
+      ch.lectures.push({ id: uid('lec'), title: quickTitle.value.trim() || 'Lecture', url: quickVideoURL.value.trim() || '', duration:'', date:'', thumb:'', concepts:[], attachments:[] });
+      quickTitle.value=''; quickVideoURL.value=''; renderLecturesList(); markDirty();
+    };
+
+    // uploads
+    uploadVideoBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'video' }, info => { lectureURL.value = info.secure_url; Swal.fire('Uploaded','Video uploaded','success'); markDirty(); });
+    uploadThumbBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'image' }, info => { lectureThumb.value = info.secure_url; Swal.fire('Uploaded','Thumbnail uploaded','success'); markDirty(); });
+    uploadAttachmentBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'raw' }, info => { attachmentURL.value = info.secure_url; Swal.fire('Uploaded','Attachment uploaded','success'); });
+
+    addAttachmentBtn.onclick = ()=> {
+      if(!attachmentURL.value.trim()) return Swal.fire('No URL','Provide attachment URL or upload','warning');
+      if(!SELECTED_SUBJECT || currentChapterIndex == null) return Swal.fire('Open chapter','Open a chapter to attach','warning');
+      const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+      const idx = saveLectureBtn.dataset.editing;
+      if(idx == null) {
+        // no editing lecture in form — attach to the form's lecture temp storage
+        // Use attachmentsList to show pending attachments
+        const a = { id: uid('att'), title: attachmentURL.value.split('/').pop(), url: attachmentURL.value.trim() };
+        const existing = attachmentsList.dataset.pending ? JSON.parse(attachmentsList.dataset.pending) : [];
+        existing.push(a);
+        attachmentsList.dataset.pending = JSON.stringify(existing);
+        copyAttachmentsToUI(existing);
+        attachmentURL.value = '';
+        markDirty();
+        return;
+      } else {
+        // attach to lecture being edited
+        const l = ch.lectures[idx];
+        l.attachments = l.attachments || [];
+        l.attachments.push({ id: uid('att'), title: attachmentURL.value.split('/').pop(), url: attachmentURL.value.trim() });
+        attachmentURL.value=''; renderLecturesList(); markDirty();
+        return;
+      }
+    };
+
+    // copy pending attachments into new lecture on save
+    function flushPendingAttachmentsToLecture(lecture){
+      const pending = attachmentsList.dataset.pending ? JSON.parse(attachmentsList.dataset.pending) : [];
+      if(pending.length){
+        lecture.attachments = lecture.attachments || [];
+        lecture.attachments.push(...pending);
+        delete attachmentsList.dataset.pending;
+        copyAttachmentsToUI([]);
+      }
+    }
+
+    // when saving lecture, if form had pending attachments attach them
+    saveLectureBtn.addEventListener('click', () => {
+      const editing = saveLectureBtn.dataset.editing;
+      if(!editing){
+        // attach pending attachments to newly created lecture in same tick (listener above already added)
+        // But since save code constructs lecture object WITHOUT taking attachments from pending, we handle by attaching after push
+        // Wait microtask then attach pending
+        setTimeout(()=> {
+          const ch = CONTENT.subjects[SELECTED_SUBJECT].chapters[currentChapterIndex];
+          const last = ch.lectures[ch.lectures.length - 1];
+          if(last) flushPendingAttachmentsToLecture(last);
+          renderLecturesList();
+        }, 60);
+      } else {
+        // editing — attachments added directly earlier
+      }
+    });
+
+    // ---------- save content to firestore ----------
+    saveBtn.onclick = saveContent;
+    async function saveContent(){
+      if(!courseId) return Swal.fire('Missing','Open this page with ?id=<courseId>','error');
+      if(saveLock) return;
+      saveLock = true;
+      try{
+        const payload = { content: CONTENT, updatedAt: serverTimestamp() };
+        await updateDoc(doc(db,'courses',courseId), payload);
+        Swal.fire({ icon:'success', title:'Saved', text:'Lectures saved', timer:1200, showConfirmButton:false });
+        isDirty = false;
+      } catch(err){
+        console.error('save err', err);
+        Swal.fire('Error','Failed to save content','error');
+      } finally { saveLock = false; }
+    }
+
+    // keyboard save
+    window.addEventListener('keydown', (e)=>{ if((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 's'){ e.preventDefault(); saveContent(); }});
+
+    // ---------- load content ----------
+    function getQueryParam(name){ const u = new URL(window.location.href); return u.searchParams.get(name); }
+
+    async function loadCourseAndContent(id){
+      try{
+        const snap = await getDoc(doc(db,'courses',id));
+        if(!snap.exists()) return Swal.fire('Not found','Course not found','error');
+        const data = snap.data();
+        CONTENT = data.content || { subjects: {} };
+
+        // ensure defaults
+        if(!CONTENT.subjects) CONTENT.subjects = {};
+        // normalize subjects if simple array structure exists (backwards compat) — assume object preferred
+        // Select first subject
+        const keys = Object.keys(CONTENT.subjects);
+        SELECTED_SUBJECT = keys[0] || null;
+        // choose first chapter id
+        if(SELECTED_SUBJECT) {
+          const subj = CONTENT.subjects[SELECTED_SUBJECT];
+          subj.chapters = subj.chapters || [];
+          SELECTED_CHAPTER = subj.chapters[0] ? subj.chapters[0].id : null;
+          currentChapterIndex = subj.chapters[0] ? 0 : null;
+        } else {
+          SELECTED_CHAPTER = null; currentChapterIndex = null;
+        }
+        courseId = id;
+        courseIdDisplay.textContent = courseId;
+        renderSubjectSelect();
+        renderChapterSelect();
+      } catch(err){
+        console.error('load err', err);
+        Swal.fire('Error','Failed to load course','error');
+      }
+    }
+
+    // ---------- small CRUD for subjects/chapters locally ----------
+    function createChapterInSelectedSubject(title){
+      if(!SELECTED_SUBJECT) return Swal.fire('Select subject','Create/select a subject first','warning');
+      const ch = { id: uid('ch'), title: title || 'Untitled', lectures: [], concepts: [], materials: [], study: [], flashcards: [], questions: [], revisions: [] };
+      CONTENT.subjects[SELECTED_SUBJECT].chapters.push(ch);
+      renderChapterSelect(); markDirty();
+    }
+
+    // subject selection change handlers
+    subjectSelect.onchange = ()=> {
+      SELECTED_SUBJECT = subjectSelect.value;
+      // pick first chapter
+      const subj = CONTENT.subjects[SELECTED_SUBJECT];
+      SELECTED_CHAPTER = subj.chapters[0] ? subj.chapters[0].id : null;
+      currentChapterIndex = subj.chapters[0] ? 0 : null;
+      renderChapterSelect();
+    };
+
+    chapterSelect.onchange = ()=> {
+      SELECTED_CHAPTER = chapterSelect.value;
+      const subj = CONTENT.subjects[SELECTED_SUBJECT];
+      currentChapterIndex = subj.chapters.findIndex(c=>c.id === SELECTED_CHAPTER);
+      renderLecturesList();
+    };
+
+    createChapterConfirm.onclick = ()=> {
+      const title = newChapterName.value.trim();
+      if(!title) return Swal.fire('Enter title','Please enter a chapter title','warning');
+      if(!SELECTED_SUBJECT) return Swal.fire('No subject','Create/select a subject first','warning');
+      createChapterInSelectedSubject(title);
+      newChapterName.value = '';
+    };
+
+    // --- NEW PERMISSION GUARD ---
+const { user, role } = await requirePermission("manageSubjects");
+
+const courseIdParam = getQueryParam("id");
+if (!courseIdParam) {
+  Swal.fire("Missing ID", "Open this page with ?id=<courseId>", "warning");
+} else {
+  await loadCourseAndContent(courseIdParam);
+}
+
+    // beforeunload guard
+    window.addEventListener('beforeunload', (e)=> { if(isDirty){ e.preventDefault(); e.returnValue = ''; }});
+
+    // small: initialize placeholder if no subjects exist (optional helper)
+    // You can create subjects from other admin pages; this editor expects existing subject/chapter structure.
+  </script>
+</body>
+</html>

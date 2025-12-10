@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BCD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+  font-family: 'Outfit', sans-serif;
+  background: linear-gradient(to bottom right, #ede9fe, #e0d7ff);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+.dashboard-container {
+  display: flex;
+  max-width: 1000px;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 12px 40px rgba(128, 90, 213, 0.3);
+}
+
+/* Darker glass for readability */
+.dashboard-left {
+  flex: 3;
+  padding: 2rem;
+  background: rgba(32, 0, 64, 0.7);
+  backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.dashboard-right { 
+  flex: 1; 
+  background: rgba(32,0,64,0.6); 
+  display:flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
+  padding: 2rem; 
+  gap: 1.2rem;
+}
+
+.profile-card { text-align: center; margin-bottom: 2rem; }
+.avatar { width:110px;height:110px;border-radius:50%;border:3px solid #c084fc;margin-bottom:1rem;background:linear-gradient(135deg,#a855f7,#7c3aed);padding:3px;box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+h2 { font-size:1.6rem; color:#f8f3ff; text-shadow:0 1px 10px rgba(128,90,213,0.6); }
+
+.section { margin-bottom:2rem; }
+.section h3 {
+  margin-bottom:1rem;
+  color: #e0cfff;
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+  padding-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing:1px;
+  text-shadow:0 1px 6px rgba(128,90,213,0.4);
+}
+.stat-item { display:flex; justify-content:space-between; margin-bottom:0.6rem; font-size:1rem; color:#f2e9ff; text-shadow:0 1px 4px rgba(0,0,0,0.4); }
+
+.xp-bar { height:14px; background: rgba(255,255,255,0.2); border-radius:7px; margin-top:0.3rem; overflow:hidden; box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);}
+.xp-bar-inner { height:100%; width:0%; border-radius:7px; animation: fill 1.2s ease forwards; background: linear-gradient(270deg,#a855f7,#7c3aed,#c084fc); background-size:600% 600%; animation: gradientAnimation 4s ease infinite, fill 1.2s ease forwards; box-shadow:0 0 8px rgba(255,255,255,0.6) inset;}
+@keyframes gradientAnimation{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes fill{from{width:0%}to{width:var(--bar-width)}}
+
+#badges { display:flex; flex-wrap:wrap; gap:0.3rem; }
+#badges .badge { display:inline-block; background: linear-gradient(270deg,#c084fc,#a855f7,#7c3aed); color:#fff; padding:0.35rem 0.7rem; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:default; box-shadow:0 0 12px rgba(255,255,255,0.5); transition:transform 0.2s,box-shadow 0.3s; }
+#badges .badge:hover{transform:scale(1.1);box-shadow:0 0 25px rgba(255,255,255,0.8);}
+
+.action-btn {
+  width:100%;
+  padding:0.9rem 1rem;
+  border-radius:14px;
+  background: linear-gradient(135deg,#a855f7,#7c3aed,#c084fc);
+  font-weight:700;
+  font-size:1rem;
+  text-align:center;
+  cursor:pointer;
+  box-shadow:0 6px 25px rgba(128,90,213,0.4);
+  transition: transform 0.3s, box-shadow 0.3s;
+  text-shadow:0 1px 5px rgba(0,0,0,0.4);
+}
+.action-btn:hover { transform: translateY(-4px); box-shadow:0 10px 40px rgba(128,90,213,0.6);}
+</style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="dashboard-left">
+      <!-- Profile -->
+      <div class="profile-card">
+        <img id="avatar" src="" alt="Avatar" class="avatar">
+        <h2 id="username">Username</h2>
+      </div>
+
+      <!-- Stats -->
+      <div class="section">
+        <h3>Stats</h3>
+        <div class="stat-item"><span>Level</span><span id="level">0</span></div>
+        <div class="stat-item"><span>Rank</span><span id="rank">N/A</span></div>
+        <div class="stat-item"><span>Messages Sent</span><span id="messages">0</span></div>
+        <div class="stat-item"><span>Total XP</span><span id="totalXP">0</span></div>
+        <div class="stat-item"><span>VC Streak</span><span id="vcStreak">0</span></div>
+        <div class="stat-item"><span>Prarambh Version</span><span id="prarambhVersion">N/A</span></div>
+        <div class="stat-item"><span>Prarambh Day</span><span id="prarambhDay">0</span></div>
+        <div class="stat-item"><span>Tasks Completed</span><span id="taskscompleted">0</span></div>
+      </div>
+
+      <!-- XP -->
+      <div class="section">
+        <h3>VC Time :</h3>
+        <div class="stat-item"><span>Daily</span><span id="xpDaily">0</span></div>
+        <div class="xp-bar"><div id="xpDailyBar" class="xp-bar-inner"></div></div>
+
+        <div class="stat-item"><span>Weekly</span><span id="xpWeekly">0</span></div>
+        <div class="xp-bar"><div id="xpWeeklyBar" class="xp-bar-inner"></div></div>
+
+        <div class="stat-item"><span>Monthly</span><span id="xpMonthly">0</span></div>
+        <div class="xp-bar"><div id="xpMonthlyBar" class="xp-bar-inner"></div></div>
+
+        <div class="stat-item"><span>Yearly</span><span id="xpYearly">0</span></div>
+        <div class="xp-bar"><div id="xpYearlyBar" class="xp-bar-inner"></div></div>
+
+        <div class="stat-item"><span>Total</span><span id="xpTotal">0</span></div>
+        <div class="xp-bar"><div id="xpTotalBar" class="xp-bar-inner"></div></div>
+      </div>
+
+      <!-- Badges -->
+      <div class="section">
+        <h3>Badges</h3>
+        <div id="badges">No badges earned yet.</div>
+      </div>
+    </div>
+
+    <div class="dashboard-right">
+      <div class="action-btn"><a href="/prarambh.html">Leaderboard</a></div>
+      <div class="action-btn"><a>Prarambh Leaderboard</a></div>
+      <div class="action-btn"><a>Prarambh Participants</a></div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const userParam = params.get('user');
+
+    if(!userParam){alert('Not logged in!'); window.location.href='index.html';}
+    else{
+      const discordUser = JSON.parse(decodeURIComponent(userParam));
+      document.getElementById('username').innerText = discordUser.username || 'Unknown';
+      document.getElementById('avatar').src = discordUser.avatar
+        ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+        : 'default-avatar.png';
+
+      function calculateRank(level){
+        if(level>=50) return 1;
+        if(level>=40) return 2;
+        if(level>=30) return 3;
+        if(level>=20) return 4;
+        if(level>=10) return 5;
+        return 6;
+      }
+
+      fetch(`https://discord-login-backend.vercel.app/api/profile?userId=${discordUser.id}`)
+        .then(res=>res.json())
+        .then(profile=>{
+          const level = profile.level ?? 0;
+          document.getElementById('level').innerText = level;
+          document.getElementById('rank').innerText = calculateRank(level);
+          document.getElementById('messages').innerText = profile.messagesSent ?? 0;
+          document.getElementById('totalXP').innerText = profile.totalXP ?? 0;
+          document.getElementById('vcStreak').innerText = profile.vcStreak ?? 0;
+          document.getElementById('prarambhVersion').innerText = profile.prarambhVersion ?? 'N/A';
+          document.getElementById('prarambhDay').innerText = profile.prarambhDay ?? 0;
+          document.getElementById('taskscompleted').innerText = profile.todoTasksCompleted ?? 0;
+
+          const xp = profile.xp || {};
+          document.getElementById('xpDaily').innerText = xp.daily ?? 0;
+          document.getElementById('xpWeekly').innerText = xp.weekly ?? 0;
+          document.getElementById('xpMonthly').innerText = xp.monthly ?? 0;
+          document.getElementById('xpYearly').innerText = xp.yearly ?? 0;
+          document.getElementById('xpTotal').innerText = xp.total ?? 0;
+
+          ['xpDailyBar','xpWeeklyBar','xpMonthlyBar','xpYearlyBar','xpTotalBar'].forEach(id=>{
+            const bar = document.getElementById(id);
+            let value=0;
+            if(id==='xpDailyBar') value=Math.min(xp.daily??0,100);
+            if(id==='xpWeeklyBar') value=Math.min((xp.weekly??0)/10,100);
+            if(id==='xpMonthlyBar') value=Math.min((xp.monthly??0)/15,100);
+            if(id==='xpYearlyBar') value=Math.min((xp.yearly??0)/50,100);
+            if(id==='xpTotalBar') value=Math.min((xp.total??0)/90,100);
+            bar.style.setProperty('--bar-width', value+'%');
+          });
+
+          const badgesContainer = document.getElementById('badges');
+          badgesContainer.innerHTML='';
+          if(Array.isArray(profile.badges)&&profile.badges.length>0){
+            profile.badges.forEach(b=>{
+              const span=document.createElement('span');
+              span.className='badge';
+              span.innerText=b.replace(/_/g,' ').toUpperCase();
+              badgesContainer.appendChild(span);
+            });
+          }else badgesContainer.textContent='No badges earned yet.';
+        })
+        .catch(err=>{console.error(err); alert('Failed to load profile data!');});
+    }
+  </script>
+</body>
+</html>

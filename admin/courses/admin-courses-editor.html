@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Course Editor • BCD Admin (Premium Final)</title>
+
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Cloudinary Upload Widget -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <style>
+    :root{
+      --bg-start:#f8f6ff;
+      --bg-end:#f3f5ff;
+      --muted:#6b7280;
+      --card-bg: rgba(255,255,255,0.97);
+      --accent-1:#6b21a8;
+      --accent-2:#8b5cf6;
+      --accent-3:#4f46e5;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg,var(--bg-start),var(--bg-end));
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .app { max-width:1200px; margin:28px auto; display:flex; gap:20px; padding:0 16px; align-items:flex-start; }
+    /* Sidebar (Compact Pro) */
+    .sidebar {
+      width:260px; flex-shrink:0; border-radius:14px; padding:18px;
+      background: linear-gradient(180deg, rgba(124,58,237,0.08), rgba(99,102,241,0.04));
+      box-shadow: 0 12px 34px rgba(16,24,40,0.06);
+      position:sticky; top:24px; height:calc(100vh - 48px); display:flex; flex-direction:column;
+    }
+    .brand { display:flex; gap:12px; align-items:center; }
+    .logo { width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;box-shadow:0 8px 28px rgba(99,102,241,0.12); }
+    .brand .title{font-weight:800;font-size:16px}
+    .brand .sub{font-size:12px;color:var(--muted)}
+
+    .nav { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+    .nav-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:700; color:#222; transition:all .14s ease; }
+    .nav-item i { width:20px; text-align:center; }
+    .nav-item:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(99,102,241,0.04); }
+    .nav-item.active { background: linear-gradient(90deg,var(--accent-1),var(--accent-3)); color:#fff; box-shadow:0 12px 36px rgba(99,102,241,0.12); }
+
+    .quick { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+    .btn { display:inline-flex; align-items:center; gap:10px; justify-content:center; padding:10px; border-radius:10px; cursor:pointer; font-weight:800; }
+    .btn i { width:18px; text-align:center; }
+    .btn-save { background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:#fff; box-shadow:0 10px 28px rgba(124,58,237,0.12); }
+    .btn-publish { background: linear-gradient(90deg,#10b981,#059669); color:#fff; }
+    .btn-outline { background:#fff; border:1px solid rgba(15,23,42,0.06); color:#0f172a; }
+    .btn-danger { background:#fff5f5; border:1px solid #fee2e2; color:#b91c1c; }
+
+    .course-id { font-size:12px; color:var(--muted); padding-top:4px; }
+
+    /* Main area */
+    .main { flex:1; display:flex; flex-direction:column; gap:16px; }
+    .card { background:var(--card-bg); border-radius:12px; padding:18px; box-shadow:0 10px 28px rgba(16,24,40,0.04); border:1px solid rgba(15,23,42,0.03); }
+    .section-title { display:flex; align-items:center; gap:12px; }
+    .section-title h2 { margin:0; font-size:18px; font-weight:800; }
+    .section-sub { font-size:13px; color:var(--muted); }
+    .input, textarea, select { width:100%; padding:11px 12px; border-radius:10px; border:1px solid rgba(15,23,42,0.06); font-size:14px; background:transparent; outline:none; }
+    textarea{ min-height:96px; resize:vertical; }
+    .thumb-wrap { width:140px; height:90px; flex-shrink:0; display:flex; align-items:center; justify-content:center; border-radius:8px; overflow:hidden; background:#f8fafc; border:1px solid rgba(15,23,42,0.03); }
+    .thumb-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+    .small-note { font-size:13px; color:var(--muted); }
+
+    /* responsive */
+    @media (max-width:1024px){
+      .app { flex-direction:column; }
+      .sidebar { width:100%; height:auto; position:relative; top:auto; border-radius:12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar card" aria-label="Sidebar">
+      <div class="brand">
+        <div class="logo">BCD</div>
+        <div>
+          <div class="title">Books Coffee & Dreams</div>
+          <div class="sub">Course Editor • Admin</div>
+        </div>
+      </div>
+
+      <nav class="nav" id="tabs">
+        <div class="nav-item active" data-tab="general"><i class="fa-solid fa-circle-info"></i> <span>General</span></div>
+        <div class="nav-item" data-tab="thumbnail"><i class="fa-solid fa-image"></i> <span>Thumbnail</span></div>
+        <div class="nav-item" data-tab="courseMedia"><i class="fa-solid fa-photo-film"></i> <span>Course Media</span></div>
+        <div class="nav-item" data-tab="pricing"><i class="fa-solid fa-tag"></i> <span>Pricing</span></div>
+        <div class="nav-item" data-tab="publish"><i class="fa-solid fa-upload"></i> <span>Publish</span></div>
+      </nav>
+
+      <div class="quick">
+        <button id="saveBtn" class="btn btn-save"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        <button id="publishBtn" class="btn btn-publish"><i class="fa-solid fa-paper-plane"></i> Publish</button>
+        <button id="openPaymentBtn" class="btn btn-outline"><i class="fa-solid fa-credit-card"></i> Payment Editor</button>
+        <button id="deleteBtn" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Delete</button>
+        <div class="course-id">Course ID: <span id="courseIdDisplay">—</span></div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- GENERAL -->
+      <section id="panel-general" class="card">
+        <div class="section-title">
+          <h2>General</h2>
+          <div class="section-sub">Core course information</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="small-note">Title</label>
+            <input id="title" class="input" placeholder="Course Title" />
+          </div>
+          <div>
+            <label class="small-note">Short Subtitle</label>
+            <input id="subtitle" class="input" placeholder="Short subtitle" />
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="small-note">Long Description</label>
+          <textarea id="description" class="input" placeholder="Full course description"></textarea>
+        </div>
+
+        <div class="mt-4 grid md:grid-cols-3 gap-4">
+          <div>
+            <label class="small-note">Duration</label>
+            <input id="duration" class="input" placeholder="e.g. 12 weeks" />
+          </div>
+          <div>
+            <label class="small-note">Exam Tags</label>
+            <input id="examTags" class="input" placeholder="JEE, NEET, Boards" />
+          </div>
+        </div>
+      </section>
+
+      <!-- THUMBNAIL (Course thumbnail only) -->
+      <section id="panel-thumbnail" class="card hidden">
+        <div class="section-title">
+          <h2>Thumbnail</h2>
+          <div class="section-sub">Global course thumbnail (used on listings & marketing)</div>
+        </div>
+
+        <div class="mt-4 flex gap-6 items-start">
+          <div class="thumb-wrap" style="width:200px; height:120px;">
+            <img id="courseThumbnailPreview" src="" alt="course thumbnail" class="hidden" />
+            <div id="courseThumbEmpty" class="small-note">No thumbnail</div>
+          </div>
+
+          <div class="flex-1">
+            <div class="small-note">Upload a course thumbnail via Cloudinary or paste a URL. This is <strong>the main course thumbnail</strong>.</div>
+            <div class="mt-3 flex gap-3">
+              <button id="uploadCourseThumb" class="btn btn-outline"><i class="fa-solid fa-upload"></i> Upload</button>
+              <button id="clearCourseThumb" class="btn btn-outline"><i class="fa-solid fa-xmark"></i> Remove</button>
+            </div>
+
+            <div class="mt-4">
+              <label class="small-note">Thumbnail URL (optional)</label>
+              <input id="courseThumbnailURL" class="input" placeholder="https://..." />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COURSE MEDIA -->
+      <section id="panel-courseMedia" class="card hidden">
+        <div class="section-title">
+          <h2>Course Media</h2>
+          <div class="section-sub">Global media for the course (trailers, promo videos, resource packs).</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="small-note">Upload Course Video (promo/trailer)</label>
+            <div class="mt-3 flex gap-2">
+              <button id="uploadCourseVideoBtn" class="btn btn-outline"><i class="fa-solid fa-video"></i> Upload Video</button>
+            </div>
+            <div id="courseVideoStatus" class="mt-2 small-note">Use this for promo or preview videos (not tied to lessons).</div>
+          </div>
+
+          <div>
+            <label class="small-note">Upload Course Resources (PDF)</label>
+            <div class="mt-3 flex gap-2">
+              <button id="uploadCourseNotesBtn" class="btn btn-outline"><i class="fa-solid fa-file-pdf"></i> Upload PDF</button>
+            </div>
+            <div id="courseNotesStatus" class="mt-2 small-note">General PDFs or resource packs for the entire course.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section id="panel-pricing" class="card hidden">
+        <div class="section-title">
+          <h2>Pricing</h2>
+          <div class="section-sub">Set price and flags</div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label class="small-note">Price (INR)</label>
+            <input id="price" type="number" min="0" class="input" />
+          </div>
+          <div>
+            <label class="small-note">Is Paid?</label>
+            <select id="isPaid" class="input">
+              <option value="false">Free</option>
+              <option value="true">Paid</option>
+            </select>
+          </div>
+          <div>
+            <label class="small-note">Featured</label>
+            <select id="isFeatured" class="input">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 small-note">Payment & Razorpay settings live in the Payment Editor.</div>
+      </section>
+
+      <!-- PUBLISH -->
+      <section id="panel-publish" class="card hidden">
+        <div class="section-title">
+          <h2>Publish & Meta</h2>
+          <div class="section-sub">Visibility, slug and admin notes</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="small-note">Slug (optional)</label>
+            <input id="slug" class="input" />
+          </div>
+          <div>
+            <label class="small-note">Visibility</label>
+            <select id="visibility" class="input">
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+              <option value="unlisted">Unlisted</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="small-note">Admin Notes</label>
+          <textarea id="metaNotes" class="input" rows="3" placeholder="Private admin notes"></textarea>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- FIREBASE + LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+  getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+  collection, serverTimestamp, getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { requirePermission } from "/admin/guard-v10.js";
+
+    // CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Cloudinary
+    const CLOUD_NAME = 'dkxuilgai';
+    const UPLOAD_PRESET = 'bcd_courses';
+
+    function openCloudinaryWidget(opts = {}, cb) {
+      const widget = cloudinary.createUploadWidget({
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        sources: ["local","url","camera"],
+        multiple: !!opts.multiple,
+        resourceType: opts.resourceType || 'image',
+        clientAllowedFormats: opts.clientAllowedFormats || undefined
+      }, (err, result) => {
+        if (!err && result && result.event === 'success') cb(result.info);
+        if (err) { console.error('Cloudinary error', err); Swal.fire('Upload error', err.message || 'Upload failed', 'error'); }
+      });
+      widget.open();
+    }
+
+    // ---------- UI refs ----------
+    const panels = {
+      general: document.getElementById('panel-general'),
+      thumbnail: document.getElementById('panel-thumbnail'),
+      courseMedia: document.getElementById('panel-courseMedia'),
+      pricing: document.getElementById('panel-pricing'),
+      publish: document.getElementById('panel-publish')
+    };
+    const tabEls = Array.from(document.querySelectorAll('.nav-item'));
+    const courseIdDisplay = document.getElementById('courseIdDisplay');
+
+    // general
+    const titleInp = document.getElementById('title');
+    const subtitleInp = document.getElementById('subtitle');
+    const descInp = document.getElementById('description');
+    const durationInp = document.getElementById('duration');
+    const examTagsInp = document.getElementById('examTags');
+
+    // course thumbnail
+    const courseThumbnailPreview = document.getElementById('courseThumbnailPreview');
+    const courseThumbEmpty = document.getElementById('courseThumbEmpty');
+    const uploadCourseThumb = document.getElementById('uploadCourseThumb');
+    const clearCourseThumb = document.getElementById('clearCourseThumb');
+    const courseThumbnailURL = document.getElementById('courseThumbnailURL');
+
+    // course media
+    const uploadCourseVideoBtn = document.getElementById('uploadCourseVideoBtn');
+    const uploadCourseNotesBtn = document.getElementById('uploadCourseNotesBtn');
+
+    // pricing/publish
+    const priceInp = document.getElementById('price');
+    const isPaidSel = document.getElementById('isPaid');
+    const isFeaturedSel = document.getElementById('isFeatured');
+    const slugInp = document.getElementById('slug');
+    const visibilitySel = document.getElementById('visibility');
+    const metaNotesInp = document.getElementById('metaNotes');
+
+    // buttons
+    const saveBtn = document.getElementById('saveBtn');
+    const publishBtn = document.getElementById('publishBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const openPaymentBtn = document.getElementById('openPaymentBtn');
+
+    // state
+    let courseId = null;
+    let saveLock = false;
+    let isDirty = false;
+
+    // helpers
+    function showPanel(name){
+      Object.keys(panels).forEach(k=>panels[k].classList.add('hidden'));
+      panels[name].classList.remove('hidden');
+      tabEls.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    }
+    tabEls.forEach(t=>t.addEventListener('click', ()=> showPanel(t.dataset.tab) ));
+
+    function sanitize(s=''){ return String(s||''); }
+    function parseCSV(s=''){ return String(s||'').split(',').map(x=>x.trim()).filter(Boolean); }
+
+    // ---------- Create empty course and redirect ----------
+    async function createEmptyCourseAndRedirect(){
+      try{
+        const docRef = await addDoc(collection(db,'courses'),{
+  title:'Untitled Course',
+  subtitle:'',
+  description:'',
+  duration:'',
+  tags:[],
+  price:0,
+  isPaid:false,
+  featured:false,
+  thumbnailURL:'',
+  visibility:'draft',
+  createdAt: serverTimestamp(),
+  updatedAt: serverTimestamp()
+}
+);
+        const newId = docRef.id;
+        window.location.href = `${window.location.pathname}?id=${newId}`;
+      }catch(err){
+        console.error('create course err',err);
+        Swal.fire('Error','Failed to create course','error');
+      }
+    }
+
+    // ---------- LOAD COURSE ----------
+    async function loadCourse(id){
+      try{
+        const snap = await getDoc(doc(db,'courses',id));
+        if(!snap.exists()){ Swal.fire('Not found','Course not found','error'); return; }
+        const data = snap.data();
+        courseId = id;
+        courseIdDisplay.textContent = courseId;
+
+        // populate
+        titleInp.value = data.title || '';
+        subtitleInp.value = data.subtitle || '';
+        descInp.value = data.description || '';
+        durationInp.value = data.duration || '';
+        examTagsInp.value = (data.tags||[]).join(', ');
+
+        // course thumbnail
+        const thumbURL = data.thumbnailURL || '';
+        courseThumbnailURL.value = thumbURL;
+        if(thumbURL){ courseThumbnailPreview.src = thumbURL; courseThumbnailPreview.classList.remove('hidden'); courseThumbEmpty.classList.add('hidden'); } else { courseThumbnailPreview.src=''; courseThumbnailPreview.classList.add('hidden'); courseThumbEmpty.classList.remove('hidden'); }
+
+        priceInp.value = data.price ?? 0;
+        isPaidSel.value = data.isPaid ? 'true' : 'false';
+        isFeaturedSel.value = data.featured ? 'true' : 'false';
+        slugInp.value = data.slug || '';
+        visibilitySel.value = data.visibility || 'draft';
+        metaNotesInp.value = data.metaNotes || '';
+
+        isDirty = false;
+      }catch(err){
+        console.error(err);
+        Swal.fire('Error','Failed to load course','error');
+      }
+    }
+
+    // ---------- SAVE COURSE ----------
+    async function saveCourse(){
+      if(!courseId){ Swal.fire('Missing','Course ID missing','error'); return; }
+      if(saveLock) return;
+      saveLock = true;
+      try{
+        const payload = {
+          title: titleInp.value.trim(),
+          subtitle: subtitleInp.value.trim(),
+          description: descInp.value.trim(),
+          duration: durationInp.value.trim(),
+          tags: parseCSV(examTagsInp.value),
+          thumbnailURL: (courseThumbnailPreview.src && !courseThumbnailPreview.classList.contains('hidden')) ? courseThumbnailPreview.src : (courseThumbnailURL.value.trim() || ''),
+          price: Number(priceInp.value) || 0,
+          isPaid: isPaidSel.value === 'true',
+          featured: isFeaturedSel.value === 'true',
+          slug: slugInp.value.trim(),
+          visibility: visibilitySel.value,
+          metaNotes: metaNotesInp.value.trim(),
+          updatedAt: serverTimestamp()
+        };
+        await updateDoc(doc(db,'courses',courseId), payload);
+        Swal.fire({ icon:'success', title:'Saved', text:'Course saved successfully', timer:1300, showConfirmButton:false });
+        isDirty = false;
+      }catch(err){
+        console.error('save err',err);
+        Swal.fire('Error', err.message || 'Failed to save course','error');
+      } finally {
+        saveLock = false;
+      }
+    }
+
+    // ---------- PUBLISH ----------
+    async function publishCourse(){
+      if(!courseId) return Swal.fire('Missing','Course ID missing','error');
+      try{
+        await updateDoc(doc(db,'courses',courseId), { visibility:'published', publishedAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        visibilitySel.value = 'published';
+        Swal.fire('Published','Course is now published','success');
+        isDirty = false;
+      } catch(err){
+        console.error(err);
+        Swal.fire('Error','Failed to publish course','error');
+      }
+    }
+
+    // ---------- DELETE ----------
+    async function deleteCourse(){
+      if(!courseId) return Swal.fire('Missing','Course ID missing','error');
+      const res = await Swal.fire({
+        title:'Delete course permanently?',
+        text:'This deletes the course document in Firestore (irreversible).',
+        icon:'warning',
+        showCancelButton:true,
+        confirmButtonText:'Delete permanently',
+        confirmButtonColor:'#e11d48'
+      });
+      if(!res.isConfirmed) return;
+      try{
+        await deleteDoc(doc(db,'courses',courseId));
+        Swal.fire('Deleted','Course removed','success').then(()=> window.location.href='admin-manage-courses.html');
+      } catch(err){
+        console.error(err);
+        Swal.fire('Error','Failed to delete course','error');
+      }
+    }
+
+    // ---------- WIRING UI ----------
+    uploadCourseThumb.onclick = ()=> openCloudinaryWidget({ resourceType:'image', clientAllowedFormats:['png','jpg','jpeg','webp'] }, info=>{
+      courseThumbnailPreview.src = info.secure_url;
+      courseThumbnailPreview.classList.remove('hidden');
+      courseThumbEmpty.classList.add('hidden');
+      courseThumbnailURL.value = info.secure_url;
+      markDirty();
+    });
+    clearCourseThumb.onclick = ()=> {
+      courseThumbnailPreview.src=''; courseThumbnailPreview.classList.add('hidden'); courseThumbEmpty.classList.remove('hidden'); courseThumbnailURL.value=''; markDirty();
+    };
+    courseThumbnailURL.onchange = ()=> {
+      const v = courseThumbnailURL.value.trim();
+      if(v){ courseThumbnailPreview.src = v; courseThumbnailPreview.classList.remove('hidden'); courseThumbEmpty.classList.add('hidden'); } else { courseThumbnailPreview.src=''; courseThumbnailPreview.classList.add('hidden'); courseThumbEmpty.classList.remove('hidden'); }
+      markDirty();
+    };
+
+    uploadCourseVideoBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'video', clientAllowedFormats:['mp4','mov','webm'] }, info=> { Swal.fire('Uploaded','Course video uploaded (attach to lessons if needed)','success'); markDirty(); });
+    uploadCourseNotesBtn.onclick = ()=> openCloudinaryWidget({ resourceType:'raw', clientAllowedFormats:['pdf'] }, info=> { Swal.fire('Uploaded','Course resource uploaded','success'); markDirty(); });
+
+    saveBtn.onclick = saveCourse;
+    publishBtn.onclick = publishCourse;
+    deleteBtn.onclick = deleteCourse;
+    openPaymentBtn.onclick = ()=> {
+      if(!courseId) return Swal.fire('Missing','Save the course first to manage payments.','warning');
+      window.open(`admin-courses-payment-editor.html?id=${courseId}`,'_blank');
+    };
+
+    // keyboard shortcut: ctrl/cmd + S
+    window.addEventListener('keydown', (e)=>{ if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveCourse(); } });
+
+    // unsaved changes detection
+    function markDirty(){ isDirty = true; }
+    document.querySelectorAll(
+  "#title, #subtitle, #description, #duration, #examTags, #price, #isPaid, #isFeatured, #slug, #visibility, #metaNotes, #courseThumbnailURL"
+).forEach(el=>{
+  el.addEventListener("input", markDirty);
+});
+    window.addEventListener('beforeunload', (e)=>{ if(isDirty){ e.preventDefault(); e.returnValue=''; } });
+
+    // helper to get query param
+    function getQueryParam(name){ const u = new URL(window.location.href); return u.searchParams.get(name); }
+
+    /* ----------------------------------------
+     NEW AUTH GUARD (manageCourses)
+---------------------------------------- */
+const { user, role } = await requirePermission("manageCourses");
+
+// Load or create course
+const idParam = getQueryParam('id');
+if (!idParam) {
+  await createEmptyCourseAndRedirect();
+} else {
+  courseId = idParam;
+  courseIdDisplay.textContent = courseId;
+  await loadCourse(courseId);
+}
+    // default panel
+    showPanel('general');
+    // small safety: ensure saveCourse sets isDirty false after save
+    const _saveCourse = saveCourse;
+    saveCourse = async function(){ await _saveCourse(); isDirty = false; };
+
+  </script>
+</body>
+</html>

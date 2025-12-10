@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>XP Leaderboard | BCD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top left, #ede9fe, #e9d5ff);
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(200, 150, 255, 0.25);
+    }
+    .progress-bar {
+      height: 8px;
+      background: linear-gradient(to right, #9333ea, #c084fc);
+      border-radius: 9999px;
+      box-shadow: 0 0 6px rgba(147,51,234,0.6);
+    }
+    .badge {
+      font-size: 1.2rem;
+    }
+    .countup {
+      transition: all 0.4s ease-out;
+    }
+    /* Top 3 highlight */
+    .gold { border: 2px solid gold; box-shadow: 0 0 12px gold; }
+    .silver { border: 2px solid silver; box-shadow: 0 0 12px silver; }
+    .bronze { border: 2px solid peru; box-shadow: 0 0 12px peru; }
+    /* Leaderboard card */
+    .leader-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .leader-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+    }
+    /* Scrollbar styling */
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #a78bfa;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <div class="max-w-5xl mx-auto glass p-6 rounded-2xl shadow-xl">
+    <h1 class="text-4xl font-extrabold text-center mb-6 text-purple-700 tracking-wide">🏆 XP Leaderboard</h1>
+
+    <!-- Filters -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-between mb-6">
+      <input id="searchInput" type="text" placeholder="🔍 Search by name..."
+        class="flex-1 px-4 py-2 rounded-xl border border-purple-200 bg-white/70 text-sm shadow focus:ring-2 focus:ring-purple-400 outline-none" />
+      <select id="roleFilter"
+        class="px-4 py-2 rounded-xl border border-purple-200 bg-white/70 text-sm shadow focus:ring-2 focus:ring-purple-400 outline-none">
+        <option value="">All Roles</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <p id="loading" class="text-center text-purple-600 animate-pulse">⏳ Loading leaderboard...</p>
+
+    <!-- Leaderboard -->
+    <ul id="leaderboardList" class="space-y-4 hidden"></ul>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg shadow hidden"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+    authDomain: "bcd-discord.firebaseapp.com",
+    databaseURL: "https://bcd-discord-default-rtdb.firebaseio.com",
+    projectId: "bcd-discord",
+    storageBucket: "bcd-discord.appspot.com",
+    messagingSenderId: "278895155371",
+    appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+    measurementId: "G-6Q46Z9ZF0D"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const listEl = document.getElementById("leaderboardList");
+  const searchInput = document.getElementById("searchInput");
+  const roleFilter = document.getElementById("roleFilter");
+  const loadingEl = document.getElementById("loading");
+
+  function calculateLevel(xp) {
+    if (xp <= 0) return { level: 0, progress: 0 };
+    const level = Math.floor(0.2 * Math.sqrt(xp));
+    const nextXP = Math.pow((level + 1) / 0.2, 2);
+    const currXP = Math.pow(level / 0.2, 2);
+    const progress = Math.floor(((xp - currXP) / (nextXP - currXP)) * 100);
+    return { level, progress: Math.min(100, Math.max(0, progress)) };
+  }
+
+  function getRankBadge(index) {
+    const badge = {
+      0: "🥇",
+      1: "🥈",
+      2: "🥉"
+    }[index] || `<span class="text-purple-600 font-bold">#${index + 1}</span>`;
+    return `<span class="badge">${badge}</span>`;
+  }
+
+  function countUp(el, to) {
+    let start = 0;
+    const duration = 800;
+    const stepTime = 20;
+    const steps = duration / stepTime;
+    const increment = to / steps;
+    const interval = setInterval(() => {
+      start += increment;
+      if (start >= to) {
+        el.textContent = `${to.toLocaleString()} XP`;
+        clearInterval(interval);
+      } else {
+        el.textContent = `${Math.floor(start).toLocaleString()} XP`;
+      }
+    }, stepTime);
+  }
+
+  function getBadgesFromDay(day = 0) {
+    const urls = [];
+    if (day >= 1) urls.push("https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/prarambh_study_badge_1.png");
+    if (day >= 5) urls.push("https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/prarambh_study_badge_2.png");
+    if (day >= 10) urls.push("https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/prarambh_study_badge_3.png");
+    if (day >= 15) urls.push("https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/prarambh_study_badge_4.png");
+    if (day >= 21) urls.push("https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/prarambh_study_badge_5.png");
+    return urls;
+  }
+
+  function renderLeaderboard(users) {
+    const keyword = searchInput.value.toLowerCase();
+    const selectedRole = roleFilter.value;
+    const filtered = users.filter(u =>
+      (!selectedRole || u.role === selectedRole) &&
+      (!keyword || u.username.toLowerCase().includes(keyword))
+    );
+
+    listEl.innerHTML = "";
+
+    filtered.forEach((u, i) => {
+      const { level, progress } = calculateLevel(u.totalXP || 0);
+      const badges = getBadgesFromDay(u.prarambhDay || 0);
+      const li = document.createElement("li");
+      li.className = "leader-card bg-white/60 hover:bg-white/80 p-5 rounded-xl flex gap-4 items-center justify-between transition";
+
+      if (i === 0) li.classList.add("gold");
+      if (i === 1) li.classList.add("silver");
+      if (i === 2) li.classList.add("bronze");
+
+      li.innerHTML = `
+        <div class="flex items-center gap-3">
+          ${getRankBadge(i)}
+          <img src="${u.avatar}" class="w-12 h-12 rounded-full border-2 border-purple-400 shadow" />
+          <div>
+            <p class="font-semibold text-gray-800">${u.username}</p>
+            <p class="text-xs text-purple-600">${u.role || 'Member'}</p>
+          </div>
+        </div>
+        <div class="text-right w-1/2">
+          <p class="text-sm text-purple-800 font-medium">Level ${level}</p>
+          <div class="w-full bg-purple-200 rounded-full mt-1">
+            <div class="progress-bar" style="width: ${progress}%;"></div>
+          </div>
+          <p class="text-xs text-purple-800 mt-1 countup" data-xp="${u.totalXP || 0}">0 XP</p>
+          <div class="flex gap-2 mt-2 flex-nowrap overflow-x-auto scrollbar-thin">
+            ${
+              badges.length
+                ? badges.map(url => `
+  <img 
+    src="${url}" 
+    class="w-12 h-12 rounded-lg border-2 border-purple-300 flex-shrink-0 shadow-md" 
+    title="${url.split('/').pop().replace('.png','').replaceAll('_',' ')}" 
+  />
+`).join('')
+
+                : "<span class='text-xs text-gray-500'>No badges</span>"
+            }
+          </div>
+        </div>
+      `;
+      listEl.appendChild(li);
+      countUp(li.querySelector(".countup"), u.totalXP || 0);
+    });
+  }
+
+  onSnapshot(collection(db, "users"), (snapshot) => {
+    const users = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.username && data.avatar && typeof data.totalXP === "number" && data.totalXP >= 0) {
+        users.push(data);
+      }
+    });
+
+    const skipped = snapshot.size - users.length;
+    if (skipped > 0) {
+      const toast = document.getElementById("toast");
+      toast.textContent = `⚠️ Skipped ${skipped} incomplete user${skipped > 1 ? "s" : ""}`;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), 3000);
+    }
+
+    users.sort((a, b) => b.totalXP - a.totalXP);
+    loadingEl.classList.add("hidden");
+    listEl.classList.remove("hidden");
+    renderLeaderboard(users);
+
+    const roles = [...new Set(users.map(u => u.role).filter(Boolean))].sort();
+    roleFilter.innerHTML = '<option value="">All Roles</option>' +
+      roles.map(r => `<option value="${r}">${r}</option>`).join('');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Revision Editor • BCD Admin</title>
+
+  <!-- Tailwind (for quick layout) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Cloudinary Widget -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <!-- KaTeX for formula rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1724;
+      --muted:#9aa3ad;
+      --accent:#6b21a8;
+      --card-grad: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg,var(--bg), #071119);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:1280px;margin:28px auto;padding:20px;display:flex;gap:20px;align-items:flex-start;}
+    .left { width:320px; flex-shrink:0; display:flex; flex-direction:column; gap:16px; }
+    .right { flex:1; display:flex; flex-direction:column; gap:16px; }
+
+    .panel { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); padding:14px; border-radius:12px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+
+    h1 { font-size:20px; margin:0 0 4px 0; font-weight:800; color: #fff; }
+    .muted { color:var(--muted); font-size:13px; }
+
+    .block-btn { display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.03); background:transparent; }
+    .block-btn:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(107,33,168,0.06); }
+
+    .blocks-list { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+
+    /* editor area */
+    .editor-toolbar { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    .editor-canvas { min-height:480px; max-height:75vh; overflow:auto; padding:12px; border-radius:10px; border:1px dashed rgba(255,255,255,0.03); background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent); }
+
+    .block-card { background: linear-gradient(180deg, rgba(255,255,255,0.006), rgba(255,255,255,0.002)); border-radius:10px; padding:12px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.02); display:flex; gap:12px; align-items:flex-start; }
+    .block-card .meta { width:120px; min-width:120px; font-size:13px; color:var(--muted); }
+    .block-card .body { flex:1; min-width:0; }
+    .block-actions { display:flex; gap:6px; align-items:center; }
+
+    .input, textarea, select { width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); background:transparent; color:#e6eef8; font-size:13px; }
+    textarea { min-height:84px; resize:vertical; }
+
+    .small { font-size:12px; color:var(--muted); }
+
+    .btn { padding:8px 10px; border-radius:8px; font-weight:700; cursor:pointer; border:1px solid rgba(255,255,255,0.03); background:transparent; color:#fff; }
+    .btn-primary { background:linear-gradient(90deg,var(--accent),#4f46e5); border:none; box-shadow:0 8px 30px rgba(79,70,229,0.08); }
+    .btn-ghost { background:transparent; }
+    .pill { padding:6px 8px; border-radius:999px; background:rgba(255,255,255,0.02); }
+
+    .toggle { display:inline-flex; gap:8px; align-items:center; }
+
+    .preview { background:#020617; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); }
+
+    .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+
+    /* responsive */
+    @media (max-width:1024px){ .container{flex-direction:column;} .left{width:100%;} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- left palette -->
+    <div class="left">
+      <div class="panel">
+        <h1>Revision Blocks</h1>
+        <div class="muted">Add blocks to build the revision note (All blocks included)</div>
+
+        <div class="blocks-list" id="blockPalette">
+          <div class="block-btn" data-type="heading"><i class="fa-solid fa-heading"></i> <div><div style="font-weight:700">Heading</div><div class="small muted">H1/H2/H3</div></div></div>
+          <div class="block-btn" data-type="paragraph"><i class="fa-solid fa-paragraph"></i> <div><div style="font-weight:700">Paragraph</div><div class="small muted">Rich paragraph</div></div></div>
+          <div class="block-btn" data-type="image"><i class="fa-solid fa-image"></i> <div><div style="font-weight:700">Image</div><div class="small muted">Upload/copy URL</div></div></div>
+          <div class="block-btn" data-type="imageText"><i class="fa-solid fa-columns"></i> <div><div style="font-weight:700">Image + Text</div><div class="small muted">Side-by-side</div></div></div>
+          <div class="block-btn" data-type="bullets"><i class="fa-solid fa-list"></i> <div><div style="font-weight:700">Bullet List</div><div class="small muted">Multiple bullets</div></div></div>
+          <div class="block-btn" data-type="numbered"><i class="fa-solid fa-list-ol"></i> <div><div style="font-weight:700">Numbered List</div><div class="small muted">Ordered</div></div></div>
+          <div class="block-btn" data-type="keypoints"><i class="fa-solid fa-star"></i> <div><div style="font-weight:700">Important Points</div><div class="small muted">Toggle ON/OFF</div></div></div>
+          <div class="block-btn" data-type="confusions"><i class="fa-solid fa-question-circle"></i> <div><div style="font-weight:700">Common Confusions</div><div class="small muted">Toggle ON/OFF</div></div></div>
+          <div class="block-btn" data-type="formulas"><i class="fa-solid fa-superscript"></i> <div><div style="font-weight:700">Formula Sheet</div><div class="small muted">LaTeX/KaTeX</div></div></div>
+          <div class="block-btn" data-type="tableImage"><i class="fa-solid fa-table"></i> <div><div style="font-weight:700">Table / Flowchart</div><div class="small muted">Image or grid</div></div></div>
+          <div class="block-btn" data-type="example"><i class="fa-solid fa-lightbulb"></i> <div><div style="font-weight:700">Example</div><div class="small muted">Worked example</div></div></div>
+          <div class="block-btn" data-type="warning"><i class="fa-solid fa-triangle-exclamation"></i> <div><div style="font-weight:700">Warning / Pitfall</div><div class="small muted">Highlight mistakes</div></div></div>
+        </div>
+
+        <div class="hr" style="height:1px;background:rgba(255,255,255,0.02);margin:12px 0;border-radius:2px"></div>
+
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="flex:1">
+            <div class="small muted">Subject</div>
+            <select id="subjectSelect" class="input" style="background:transparent;"></select>
+          </div>
+          <div style="width:10px"></div>
+        </div>
+
+        <div style="margin-top:8px">
+          <div class="small muted">Chapter</div>
+          <select id="chapterSelect" class="input" style="background:transparent;"></select>
+          <div class="hint">Open a chapter to edit its revision notes (this page uses ?id=&lt;courseId&gt; like other pages)</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h1>Quick Actions</h1>
+        <div class="muted">Upload / templates</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button id="uploadImageGlobal" class="btn btn-ghost"><i class="fa-solid fa-upload"></i> Upload Image</button>
+          <button id="insertTemplateKeypoints" class="btn btn-primary">Keypoints Template</button>
+        </div>
+        <div class="hint">Use template to prefill common structures</div>
+      </div>
+
+      <div class="panel">
+        <h1>Save / Export</h1>
+        <div class="muted">Save changes to course</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button id="saveBtn" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+          <button id="exportJSON" class="btn">Export JSON</button>
+        </div>
+        <div style="margin-top:8px" class="small muted">Course ID: <span id="courseIdDisplay" class="pill">—</span></div>
+      </div>
+    </div>
+
+    <!-- right editor -->
+    <div class="right">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h1>Revision Note Editor</h1>
+            <div class="muted">Build rich revision notes with blocks — live preview & KaTeX support</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label class="toggle small muted"><input type="checkbox" id="previewToggle" checked/> Live Preview</label>
+            <button id="undoBtn" class="btn">Undo</button>
+            <button id="redoBtn" class="btn">Redo</button>
+          </div>
+        </div>
+
+        <div class="editor-toolbar" style="margin-top:12px;">
+          <div class="small muted">Editor canvas</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="addBlockBtn" class="btn">Add Block</button>
+            <button id="clearAllBlocks" class="btn">Clear All</button>
+          </div>
+        </div>
+
+        <div class="editor-canvas" id="editorCanvas" style="margin-top:12px;">
+          <!-- blocks will be rendered here -->
+        </div>
+      </div>
+
+      <div class="panel">
+        <h1>Preview</h1>
+        <div id="previewArea" class="preview" style="min-height:180px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE + LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, setDoc, collection, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { requirePermission } from "/admin/guard-v10.js";
+
+    // ---------- CONFIG ----------
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Cloudinary
+    const CLOUD_NAME = 'dkxuilgai';
+    const UPLOAD_PRESET = 'bcd_courses';
+    function openCloudinaryWidget(opts = {}, cb) {
+      const widget = cloudinary.createUploadWidget({
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        sources: ["local","url","camera"],
+        multiple: !!opts.multiple,
+        resourceType: opts.resourceType || 'image',
+        clientAllowedFormats: opts.clientAllowedFormats || undefined
+      }, (err, result) => {
+        if (!err && result && result.event === 'success') cb(result.info);
+        if (err) { console.error('Cloudinary error', err); Swal.fire('Upload error', err.message || 'Upload failed', 'error'); }
+      });
+      widget.open();
+    }
+
+    // ---------- STATE ----------
+    let courseId = null;
+    let CONTENT = { revision: { subjects: {} } }; // fallback structure
+    let SUBJECTS_LIST = []; // from course content or external
+    let SELECTED_SUBJECT_ID = null;
+    let SELECTED_CHAPTER_ID = null;
+    let BLOCKS = []; // array of blocks for current chapter
+    let history = { past: [], future: [] };
+    let saveLock = false;
+    let isDirty = false;
+
+    // ---------- DOM ----------
+    const blockPalette = document.getElementById('blockPalette');
+    const editorCanvas = document.getElementById('editorCanvas');
+    const previewArea = document.getElementById('previewArea');
+    const saveBtn = document.getElementById('saveBtn');
+    const courseIdDisplay = document.getElementById('courseIdDisplay');
+    const subjectSelect = document.getElementById('subjectSelect');
+    const chapterSelect = document.getElementById('chapterSelect');
+    const uploadImageGlobal = document.getElementById('uploadImageGlobal');
+    const insertTemplateKeypoints = document.getElementById('insertTemplateKeypoints');
+    const previewToggle = document.getElementById('previewToggle');
+    const addBlockBtn = document.getElementById('addBlockBtn');
+    const clearAllBlocks = document.getElementById('clearAllBlocks');
+    const exportJSON = document.getElementById('exportJSON');
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+
+    // ---------- Helpers ----------
+    function uid(pref='b'){ return pref + '_' + Math.random().toString(36).slice(2,9); }
+    function markDirty(){ isDirty = true; }
+    function pushHistory(snapshot){
+      history.past.push(JSON.stringify(snapshot));
+      if(history.past.length>100) history.past.shift();
+      history.future = []; // clear redo
+    }
+    function undo(){
+      if(!history.past.length) return;
+      const cur = JSON.stringify(BLOCKS);
+      history.future.push(cur);
+      const prev = history.past.pop();
+      BLOCKS = JSON.parse(prev);
+      renderEditor();
+      renderPreview();
+    }
+    function redo(){
+      if(!history.future.length) return;
+      const cur = JSON.stringify(BLOCKS);
+      history.past.push(cur);
+      const next = history.future.pop();
+      BLOCKS = JSON.parse(next);
+      renderEditor();
+      renderPreview();
+    }
+
+    // ---------- Block factory ----------
+    function defaultBlock(type){
+      const base = { id: uid('blk'), type, meta:{}, toggles:{} };
+      switch(type){
+        case 'heading': return {...base, level:1, text:'Heading text' };
+        case 'paragraph': return {...base, text:'Write explanation here...' };
+        case 'image': return {...base, url:'', caption:'' };
+        case 'imageText': return {...base, imageUrl:'', text:'Explanation for image', imageLeft:true };
+        case 'bullets': return {...base, items: ['Point 1','Point 2'] };
+        case 'numbered': return {...base, items: ['Step 1','Step 2'] };
+        case 'keypoints': return {...base, items: ['Key 1','Key 2'], toggles:{visible:true} };
+        case 'confusions': return {...base, items: ['Confusion 1'], toggles:{visible:true} };
+        case 'formulas': return {...base, formulas: ['E=mc^2','F = ma'], toggles:{visible:true} };
+        case 'tableImage': return {...base, url:'', caption:'', toggles:{visible:true} };
+        case 'example': return {...base, title:'Example', steps:['Step 1','Solution...'] };
+        case 'warning': return {...base, text:'Watch out for this common error' };
+        default: return {...base};
+      }
+    }
+
+    // ---------- UI: add block ----------
+    blockPalette.querySelectorAll('.block-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> {
+        const type = btn.dataset.type;
+        addBlock(type);
+      });
+    });
+    addBlockBtn.addEventListener('click', ()=> {
+      // show quick add menu (default to paragraph)
+      addBlock('paragraph');
+    });
+
+    function addBlock(type){
+      const b = defaultBlock(type);
+      pushHistory(BLOCKS);
+      BLOCKS.push(b);
+      renderEditor();
+      renderPreview();
+      markDirty();
+    }
+
+    // ---------- Render editor ----------
+    function renderEditor(){
+      editorCanvas.innerHTML = '';
+      if(!BLOCKS.length){
+        editorCanvas.innerHTML = `<div class="muted">No blocks yet — use the left palette to add blocks.</div>`;
+        return;
+      }
+
+      BLOCKS.forEach((b, idx)=>{
+        const card = document.createElement('div');
+        card.className = 'block-card';
+        card.dataset.id = b.id;
+        card.innerHTML = `
+          <div class="meta">
+            <div style="font-weight:800">${b.type}</div>
+            <div class="small muted">#${idx+1}</div>
+            <div style="margin-top:8px" class="block-actions">
+              <button class="btn" data-act="up"><i class="fa-solid fa-arrow-up"></i></button>
+              <button class="btn" data-act="down"><i class="fa-solid fa-arrow-down"></i></button>
+              <button class="btn" data-act="duplicate"><i class="fa-solid fa-copy"></i></button>
+              <button class="btn" data-act="remove"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="body" id="body_${b.id}"></div>
+        `;
+        editorCanvas.appendChild(card);
+
+        const body = card.querySelector(`#body_${b.id}`);
+
+        // render block-specific controls
+        if(b.type === 'heading'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;">
+              <select class="input" data-prop="level">
+                <option value="1"${b.level===1?' selected':''}>H1</option>
+                <option value="2"${b.level===2?' selected':''}>H2</option>
+                <option value="3"${b.level===3?' selected':''}>H3</option>
+              </select>
+            </div>
+            <div style="margin-top:8px;">
+              <input class="input" data-prop="text" value="${escapeHtml(b.text)}" />
+            </div>
+          `;
+        } else if(b.type === 'paragraph'){
+          body.innerHTML = `<textarea class="input" data-prop="text">${escapeHtml(b.text)}</textarea>`;
+        } else if(b.type === 'image'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;">
+              <input class="input" placeholder="Image URL" data-prop="url" value="${escapeHtml(b.url||'')}" />
+              <button class="btn" data-act="upload">Upload</button>
+            </div>
+            <div style="margin-top:8px"><input class="input" placeholder="Caption (optional)" data-prop="caption" value="${escapeHtml(b.caption||'')}" /></div>
+          `;
+        } else if(b.type === 'imageText'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;">
+              <input class="input" placeholder="Image URL" data-prop="imageUrl" value="${escapeHtml(b.imageUrl||'')}" />
+              <button class="btn" data-act="upload">Upload</button>
+              <label class="toggle"><input type="checkbox" data-prop="imageLeft" ${b.imageLeft ? 'checked' : ''} /> Image left</label>
+            </div>
+            <div style="margin-top:8px"><textarea class="input" data-prop="text">${escapeHtml(b.text||'')}</textarea></div>
+          `;
+        } else if(b.type === 'bullets' || b.type === 'numbered'){
+          body.innerHTML = `<div data-list></div><div style="display:flex;gap:8px;margin-top:8px;"><input class="input" placeholder="New item" data-add /><button class="btn" data-act="addItem">Add</button></div>`;
+          const listDiv = body.querySelector('[data-list]');
+          (b.items || []).forEach((it,i)=>{
+            const row = document.createElement('div');
+            row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center'; row.style.marginTop='8px';
+            row.innerHTML = `<input class="input" data-item-index="${i}" value="${escapeHtml(it)}" /><button class="btn" data-act="removeItem" data-i="${i}">Remove</button>`;
+            listDiv.appendChild(row);
+          });
+        } else if(b.type === 'keypoints' || b.type === 'confusions'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;align-items:center;">
+              <label class="toggle small muted"><input type="checkbox" data-prop="visible" ${b.toggles?.visible ? 'checked' : ''}/> Visible</label>
+            </div>
+            <div data-list style="margin-top:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;"><input class="input" placeholder="New item" data-add /><button class="btn" data-act="addItem">Add</button></div>
+          `;
+          const listDiv = body.querySelector('[data-list]');
+          (b.items||[]).forEach((it,i)=>{
+            const row = document.createElement('div');
+            row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center'; row.style.marginTop='8px';
+            row.innerHTML = `<input class="input" data-item-index="${i}" value="${escapeHtml(it)}" /><button class="btn" data-act="removeItem" data-i="${i}">Remove</button>`;
+            listDiv.appendChild(row);
+          });
+        } else if(b.type === 'formulas'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;align-items:center;"><label class="toggle small muted"><input type="checkbox" data-prop="visible" ${b.toggles?.visible?'checked':''}/> Visible</label></div>
+            <div data-formulas style="margin-top:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;"><input class="input" placeholder="LaTeX formula (e.g. \\frac{a}{b})" data-add /><button class="btn" data-act="addFormula">Add Formula</button></div>
+          `;
+          const fdiv = body.querySelector('[data-formulas]');
+          (b.formulas||[]).forEach((f,i)=>{
+            const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center'; row.style.marginTop='8px';
+            row.innerHTML = `<input class="input" data-formula-index="${i}" value="${escapeHtml(f)}" /><div class="btn" data-act="removeFormula" data-i="${i}">Remove</div>`;
+            fdiv.appendChild(row);
+          });
+        } else if(b.type === 'tableImage'){
+          body.innerHTML = `
+            <div style="display:flex;gap:8px;">
+              <input class="input" placeholder="Image URL" data-prop="url" value="${escapeHtml(b.url||'')}" />
+              <button class="btn" data-act="upload">Upload</button>
+            </div>
+            <div style="margin-top:8px;"><input class="input" placeholder="Caption" data-prop="caption" value="${escapeHtml(b.caption||'')}" /></div>
+            <div style="margin-top:8px;"><label class="toggle small muted"><input type="checkbox" data-prop="visible" ${b.toggles?.visible?'checked':''}/> Visible</label></div>
+          `;
+        } else if(b.type === 'example'){
+          body.innerHTML = `
+            <input class="input" data-prop="title" placeholder="Example title" value="${escapeHtml(b.title||'')}" />
+            <div data-steps style="margin-top:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;"><input class="input" placeholder="New step" data-add /><button class="btn" data-act="addStep">Add Step</button></div>
+          `;
+          const sdiv = body.querySelector('[data-steps]');
+          (b.steps||[]).forEach((s,i)=>{
+            const row = document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center'; row.style.marginTop='8px';
+            row.innerHTML = `<input class="input" data-step-index="${i}" value="${escapeHtml(s)}"/><div class="btn" data-act="removeStep" data-i="${i}">Remove</div>`;
+            sdiv.appendChild(row);
+          });
+        } else if(b.type === 'warning'){
+          body.innerHTML = `<textarea class="input" data-prop="text">${escapeHtml(b.text||'')}</textarea>`;
+        } else {
+          body.innerHTML = `<div class="muted">Unknown block type</div>`;
+        }
+
+        // attach events in this block
+        attachBlockEvents(b, card);
+      });
+    }
+
+    // ---------- Attach block events ----------
+    function attachBlockEvents(block, cardEl){
+      // actions: up/down/remove/duplicate
+      cardEl.querySelectorAll('[data-act]').forEach(btn=>{
+        btn.addEventListener('click', async (ev)=>{
+          const act = btn.dataset.act;
+          if(act === 'up'){
+            const idx = BLOCKS.findIndex(x=>x.id===block.id);
+            if(idx>0){ pushHistory(BLOCKS); [BLOCKS[idx-1], BLOCKS[idx]] = [BLOCKS[idx], BLOCKS[idx-1]]; renderEditor(); renderPreview(); markDirty(); }
+          } else if(act === 'down'){
+            const idx = BLOCKS.findIndex(x=>x.id===block.id);
+            if(idx < BLOCKS.length-1){ pushHistory(BLOCKS); [BLOCKS[idx+1], BLOCKS[idx]] = [BLOCKS[idx], BLOCKS[idx+1]]; renderEditor(); renderPreview(); markDirty(); }
+          } else if(act === 'remove'){
+            const conf = await Swal.fire({ title:'Delete block?', text:'This will remove the block', icon:'warning', showCancelButton:true });
+            if(conf.isConfirmed){ pushHistory(BLOCKS); BLOCKS = BLOCKS.filter(b=>b.id!==block.id); renderEditor(); renderPreview(); markDirty(); }
+          } else if(act === 'duplicate'){
+            pushHistory(BLOCKS);
+            const copy = JSON.parse(JSON.stringify(block)); copy.id = uid('blk');
+            BLOCKS.splice(BLOCKS.findIndex(x=>x.id===block.id)+1, 0, copy);
+            renderEditor(); renderPreview(); markDirty();
+          } else if(act === 'upload'){
+            // upload image for this block
+            openCloudinaryWidget({ resourceType:'image' }, info=>{
+              // find relevant prop (image/url)
+              if(block.type === 'image'){ block.url = info.secure_url; }
+              else if(block.type === 'imageText'){ block.imageUrl = info.secure_url; }
+              else if(block.type === 'tableImage'){ block.url = info.secure_url; }
+              renderEditor(); renderPreview(); markDirty();
+            });
+          } else if(act === 'addItem'){
+            // find input
+            const inp = cardEl.querySelector('[data-add]');
+            const val = inp && inp.value.trim();
+            if(val){
+              pushHistory(BLOCKS);
+              block.items = block.items || []; block.items.push(val);
+              inp.value = '';
+              renderEditor(); renderPreview(); markDirty();
+            }
+          } else if(act === 'removeItem'){
+            pushHistory(BLOCKS);
+            block.items.splice(+btn.dataset.i,1);
+            renderEditor(); renderPreview(); markDirty();
+          } else if(act === 'addFormula'){
+            const inp = cardEl.querySelector('[data-add]');
+            const val = inp && inp.value.trim();
+            if(val){ pushHistory(BLOCKS); block.formulas = block.formulas || []; block.formulas.push(val); inp.value=''; renderEditor(); renderPreview(); markDirty(); }
+          } else if(act === 'removeFormula'){
+            pushHistory(BLOCKS); block.formulas.splice(+btn.dataset.i,1); renderEditor(); renderPreview(); markDirty();
+          } else if(act === 'addStep'){
+            const inp = cardEl.querySelector('[data-add]');
+            const v = inp && inp.value.trim();
+            if(v){ pushHistory(BLOCKS); block.steps = block.steps || []; block.steps.push(v); inp.value=''; renderEditor(); renderPreview(); markDirty(); }
+          } else if(act === 'removeStep'){
+            pushHistory(BLOCKS); block.steps.splice(+btn.dataset.i,1); renderEditor(); renderPreview(); markDirty();
+          }
+        });
+      });
+
+      // property bindings (inputs/selects/textareas)
+      cardEl.querySelectorAll('input[data-prop], textarea[data-prop], select[data-prop]').forEach(inp=>{
+        inp.addEventListener('input', ()=> {
+          const prop = inp.dataset.prop;
+          if(inp.type === 'checkbox') block[prop] = inp.checked;
+          else block[prop] = inp.value;
+          renderPreview();
+          markDirty();
+        });
+      });
+
+      // dynamic list edits (inline edits)
+      cardEl.querySelectorAll('[data-item-index]').forEach(inp=>{
+        inp.addEventListener('input', ()=> {
+          const i = +inp.dataset.itemIndex;
+          block.items[i] = inp.value;
+          renderPreview();
+          markDirty();
+        });
+      });
+      cardEl.querySelectorAll('[data-formula-index]').forEach(inp=>{
+        inp.addEventListener('input', ()=> {
+          const i = +inp.dataset.formulaIndex;
+          block.formulas[i] = inp.value;
+          renderPreview();
+          markDirty();
+        });
+      });
+      cardEl.querySelectorAll('[data-step-index]').forEach(inp=>{
+        inp.addEventListener('input', ()=> {
+          const i = +inp.dataset.stepIndex;
+          block.steps[i] = inp.value;
+          renderPreview();
+          markDirty();
+        });
+      });
+
+      // add item via input + add button handled above
+    }
+
+    // ---------- Render preview ----------
+    function renderPreview(){
+      if(!previewToggle.checked){ previewArea.innerHTML = '<div class="muted">Preview is disabled</div>'; return; }
+      let html = '';
+      BLOCKS.forEach(b=>{
+        html += renderBlockToHTML(b);
+      });
+      previewArea.innerHTML = html;
+      // render formulas with KaTeX
+      // find elements with data-katex and render
+      previewArea.querySelectorAll('[data-katex]').forEach(el=>{
+        const tex = el.dataset.katex;
+        try{
+          el.innerHTML = katex.renderToString(tex, { throwOnError:false, displayMode:true });
+        }catch(e){
+          el.innerText = tex;
+        }
+      });
+    }
+
+    function renderBlockToHTML(b){
+      if(b.type === 'heading'){
+        const lvl = b.level || 1;
+        const tag = lvl===1? 'h1' : lvl===2? 'h2' : 'h3';
+        return `<${tag} style="margin:8px 0;color:#fff">${escapeHtml(b.text||'')}</${tag}>`;
+      } else if(b.type === 'paragraph'){
+        return `<div style="margin:6px 0;line-height:1.5;color:#dbeafe">${escapeHtml(b.text||'')}</div>`;
+      } else if(b.type === 'image'){
+        return `<div style="margin:10px 0;"><img src="${escapeAttr(b.url||'')}" style="max-width:100%;border-radius:8px"/><div class="small muted">${escapeHtml(b.caption||'')}</div></div>`;
+      } else if(b.type === 'imageText'){
+        const left = b.imageLeft !== false;
+        const imgHtml = `<img src="${escapeAttr(b.imageUrl||'')}" style="width:220px;height:auto;border-radius:8px;object-fit:cover" onerror="this.style.display='none'"/>`;
+        const txtHtml = `<div style="padding:6px 8px;color:#dbeafe">${escapeHtml(b.text||'')}</div>`;
+        return `<div style="display:flex;gap:12px;align-items:flex-start;margin:10px 0">${ left ? imgHtml + txtHtml : txtHtml + imgHtml }</div>`;
+      } else if(b.type === 'bullets'){
+        const items = (b.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('');
+        return `<ul style="margin:8px 0 8px 18px;color:#dbeafe">${items}</ul>`;
+      } else if(b.type === 'numbered'){
+        const items = (b.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('');
+        return `<ol style="margin:8px 0 8px 18px;color:#dbeafe">${items}</ol>`;
+      } else if(b.type === 'keypoints'){
+        if(b.toggles?.visible === false) return '';
+        const items = (b.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('');
+        return `<div style="border-left:4px solid #f59e0b;padding:10px;margin:10px 0;background:rgba(245,158,11,0.04)"><strong>Key Points</strong><ul style="margin-top:8px">${items}</ul></div>`;
+      } else if(b.type === 'confusions'){
+        if(b.toggles?.visible === false) return '';
+        const items = (b.items||[]).map(i=>`<li>${escapeHtml(i)}</li>`).join('');
+        return `<div style="border-left:4px solid #ef4444;padding:10px;margin:10px 0;background:rgba(239,68,68,0.03)"><strong>Common Confusions</strong><ul style="margin-top:8px">${items}</ul></div>`;
+      } else if(b.type === 'formulas'){
+        if(b.toggles?.visible === false) return '';
+        const frm = (b.formulas||[]).map(f=>`<div data-katex="${escapeAttr(f)}"></div>`).join('');
+        return `<div style="margin:10px 0;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01)"><strong>Formulas</strong>${frm}</div>`;
+      } else if(b.type === 'tableImage'){
+        if(b.toggles?.visible === false) return '';
+        return `<div style="margin:10px 0;"><img src="${escapeAttr(b.url||'')}" style="max-width:100%;border-radius:6px"/><div class="small muted">${escapeHtml(b.caption||'')}</div></div>`;
+      } else if(b.type === 'example'){
+        const steps = (b.steps||[]).map(s=>`<li>${escapeHtml(s)}</li>`).join('');
+        return `<div style="margin:10px 0;padding:10px;border-radius:8px;background:rgba(99,102,241,0.04)"><strong>${escapeHtml(b.title||'Example')}</strong><ol style="margin-top:8px">${steps}</ol></div>`;
+      } else if(b.type === 'warning'){
+        return `<div style="margin:10px 0;padding:10px;border-radius:8px;background:rgba(244,63,94,0.06);border-left:4px solid #ef4444"><strong>Warning</strong><div style="margin-top:6px">${escapeHtml(b.text||'')}</div></div>`;
+      } else {
+        return `<div class="muted">Unknown block: ${escapeHtml(b.type)}</div>`;
+      }
+    }
+
+    // ---------- Utility escape ----------
+    function escapeHtml(s=''){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+    function escapeAttr(s=''){ return String(s||'').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+
+    // ---------- Save / Load ----------
+
+    saveBtn.addEventListener('click', saveRevisionContent);
+    async function saveRevisionContent(){
+      if(!courseId) return Swal.fire('Missing course ID','Open page with ?id=<courseId>','error');
+      if(!SELECTED_SUBJECT_ID || !SELECTED_CHAPTER_ID) return Swal.fire('Select chapter','Choose subject & chapter to save revision notes','warning');
+      if(saveLock) return;
+      saveLock = true;
+      try{
+        // load existing course doc to avoid overwriting other fields
+        const courseRef = doc(db,'courses',courseId);
+        const snap = await getDoc(courseRef);
+        const courseData = snap.exists() ? snap.data() : {};
+        // ensure structure
+        const revision = courseData.revision || { subjects:{} };
+        if(!revision.subjects) revision.subjects = {};
+        revision.subjects[SELECTED_SUBJECT_ID] = revision.subjects[SELECTED_SUBJECT_ID] || { chapters:{} };
+        revision.subjects[SELECTED_SUBJECT_ID].chapters = revision.subjects[SELECTED_SUBJECT_ID].chapters || {};
+        revision.subjects[SELECTED_SUBJECT_ID].chapters[SELECTED_CHAPTER_ID] = { blocks: BLOCKS, updatedAt: serverTimestamp() };
+        await updateDoc(courseRef, { revision, updatedAt: serverTimestamp() });
+        Swal.fire({ icon:'success', title:'Saved', text:'Revision notes saved', timer:1100, showConfirmButton:false });
+        isDirty = false;
+      }catch(err){
+        console.error('save err', err);
+        Swal.fire('Error','Failed to save revision notes','error');
+      } finally { saveLock = false; }
+    }
+
+    exportJSON.addEventListener('click', ()=>{
+      const json = JSON.stringify({ subject: SELECTED_SUBJECT_ID, chapter: SELECTED_CHAPTER_ID, blocks: BLOCKS }, null, 2);
+      const blob = new Blob([json], { type:'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `revision_${SELECTED_CHAPTER_ID||'export'}.json`; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ---------- Load course content and subjects/chapters ----------
+    function getQueryParam(name){ const u = new URL(window.location.href); return u.searchParams.get(name); }
+
+    async function loadCourseAndRevision(id){
+      try{
+        const snap = await getDoc(doc(db,'courses',id));
+        if(!snap.exists()){ Swal.fire('Not found','Course not found','error'); return; }
+        const data = snap.data();
+        // assume course has .content or .subjects or .revision structure; try to infer subjects & chapters
+        // Preferred: data.content.subjects (same pattern used previously) OR data.revision
+        let subjectsSource = {};
+        if(data.content && data.content.subjects) subjectsSource = data.content.subjects;
+        else if(data.subjects) subjectsSource = data.subjects;
+        else subjectsSource = {}; // fallback: attempt to extract from revision if present
+
+        // build SUBJECTS_LIST from data.content.subjects or data.revision.subjects
+        if(Object.keys(subjectsSource).length){
+          SUBJECTS_LIST = Object.keys(subjectsSource).map(id => ({ id, name: subjectsSource[id].name || subjectsSource[id].title || 'Unnamed' , meta: subjectsSource[id] }));
+        } else if(data.revision && data.revision.subjects){
+          SUBJECTS_LIST = Object.keys(data.revision.subjects).map(id => ({ id, name: data.revision.subjects[id].name || id, meta: data.revision.subjects[id] }));
+        } else {
+          SUBJECTS_LIST = []; // no subjects found - still allow creating later
+        }
+
+        CONTENT = data;
+        courseId = id;
+        courseIdDisplay.textContent = courseId;
+        populateSubjectSelect();
+        // load revision blocks for first selected subject/chapter if present
+        if(SUBJECTS_LIST.length){
+          SELECTED_SUBJECT_ID = SUBJECTS_LIST[0].id;
+          populateChapterSelectFromSource();
+        } else {
+          // no subjects - allow user to create by hand using other admin pages; BLOCKS empty
+          SELECTED_SUBJECT_ID = null;
+          SELECTED_CHAPTER_ID = null;
+          BLOCKS = [];
+          renderEditor(); renderPreview();
+        }
+
+        isDirty = false;
+      }catch(err){
+        console.error('load course err', err);
+        Swal.fire('Error','Failed to load course','error');
+      }
+    }
+
+    function populateSubjectSelect(){
+      subjectSelect.innerHTML = '';
+      SUBJECTS_LIST.forEach(s=>{
+        const opt = document.createElement('option'); opt.value = s.id; opt.textContent = s.name; subjectSelect.appendChild(opt);
+      });
+      if(SELECTED_SUBJECT_ID) subjectSelect.value = SELECTED_SUBJECT_ID;
+      subjectSelect.onchange = ()=> { SELECTED_SUBJECT_ID = subjectSelect.value; populateChapterSelectFromSource(); };
+    }
+
+    function populateChapterSelectFromSource(){
+      chapterSelect.innerHTML = '';
+      const courseData = CONTENT;
+      let chaptersSource = null;
+      // prefer data.content.subjects[id].chapters
+      if(courseData.content && courseData.content.subjects && courseData.content.subjects[SELECTED_SUBJECT_ID] && courseData.content.subjects[SELECTED_SUBJECT_ID].chapters){
+        chaptersSource = courseData.content.subjects[SELECTED_SUBJECT_ID].chapters;
+      } else if(courseData.revision && courseData.revision.subjects && courseData.revision.subjects[SELECTED_SUBJECT_ID] && courseData.revision.subjects[SELECTED_SUBJECT_ID].chapters){
+        const chObj = courseData.revision.subjects[SELECTED_SUBJECT_ID].chapters;
+        chaptersSource = Object.keys(chObj).map(k=>({ id:k, title: chObj[k].title || k }));
+      } else {
+        chaptersSource = [];
+      }
+
+      // chaptersSource can be array or object - normalize
+      let chaptersNormalized = [];
+      if(Array.isArray(chaptersSource)){
+        chaptersNormalized = chaptersSource.map(ch => ({ id: ch.id || uid('ch'), title: ch.title || ch.name || 'Untitled' }));
+      } else if(typeof chaptersSource === 'object'){
+        // if it's an object with keys
+        if(Object.keys(chaptersSource).length){
+          chaptersNormalized = Object.keys(chaptersSource).map(k => ({ id:k, title: chaptersSource[k].title || chaptersSource[k].name || k }));
+        }
+      }
+
+      // populate select
+      chaptersNormalized.forEach(ch=>{
+        const opt = document.createElement('option'); opt.value = ch.id; opt.textContent = ch.title; chapterSelect.appendChild(opt);
+      });
+
+      if(chaptersNormalized.length){
+        SELECTED_CHAPTER_ID = chaptersNormalized[0].id;
+        chapterSelect.value = SELECTED_CHAPTER_ID;
+        chapterSelect.onchange = ()=> { SELECTED_CHAPTER_ID = chapterSelect.value; loadRevisionBlocksForSelected(); };
+        loadRevisionBlocksForSelected();
+      } else {
+        // no chapters found - clear blocks
+        SELECTED_CHAPTER_ID = null;
+        BLOCKS = [];
+        chapterSelect.innerHTML = '';
+        const em = document.createElement('option'); em.value=''; em.textContent='— no chapters —'; chapterSelect.appendChild(em);
+        renderEditor(); renderPreview();
+      }
+    }
+
+    async function loadRevisionBlocksForSelected(){
+      // attempt to read from CONTENT.revision.subjects[subject].chapters[chapter].blocks
+      if(!CONTENT) CONTENT = {};
+      const revision = CONTENT.revision || {};
+      if(revision.subjects && revision.subjects[SELECTED_SUBJECT_ID] && revision.subjects[SELECTED_SUBJECT_ID].chapters && revision.subjects[SELECTED_SUBJECT_ID].chapters[SELECTED_CHAPTER_ID]){
+        BLOCKS = revision.subjects[SELECTED_SUBJECT_ID].chapters[SELECTED_CHAPTER_ID].blocks || [];
+      } else {
+        BLOCKS = []; // start empty
+      }
+      // ensure BLOCKS is deep-copied
+      BLOCKS = JSON.parse(JSON.stringify(BLOCKS));
+      history = { past: [], future: [] };
+      renderEditor();
+      renderPreview();
+    }
+
+    // ---------- Quick actions ----------
+    uploadImageGlobal.addEventListener('click', ()=> {
+      openCloudinaryWidget({ resourceType:'image' }, info=>{
+        Swal.fire('Uploaded','Image URL copied to clipboard','success');
+        navigator.clipboard?.writeText(info.secure_url).catch(()=>{});
+      });
+    });
+
+    insertTemplateKeypoints.addEventListener('click', ()=> {
+      pushHistory(BLOCKS);
+      BLOCKS.push(defaultBlock('keypoints'));
+      renderEditor(); renderPreview(); markDirty();
+    });
+
+    // clear all blocks
+    clearAllBlocks.addEventListener('click', async ()=>{
+      const r = await Swal.fire({ title:'Clear all blocks?', text:'This will remove all blocks in current chapter', icon:'warning', showCancelButton:true });
+      if(r.isConfirmed){ pushHistory(BLOCKS); BLOCKS = []; renderEditor(); renderPreview(); markDirty(); }
+    });
+
+    // undo/redo
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+
+    // ---------- Small helpers & init ----------
+    window.addEventListener('beforeunload', (e)=> { if(isDirty){ e.preventDefault(); e.returnValue=''; } });
+
+    // NEW PERMISSION GUARD
+const { user, role } = await requirePermission("manageSubjects");
+
+// get course id
+const idParam = getQueryParam("id");
+if(!idParam){
+  Swal.fire("Missing id","Open this page with ?id=<courseId>","warning");
+} else {
+  courseId = idParam;
+  courseIdDisplay.textContent = courseId;
+  await loadCourseAndRevision(courseId);
+}
+
+    // initial
+    previewToggle.addEventListener('change', ()=> renderPreview());
+  </script>
+</body>
+</html>

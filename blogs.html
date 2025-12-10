@@ -1,0 +1,269 @@
+<!-- Books Coffee and Dreams — Blogs (Homepage-matching UI, Premium White Cards B2) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blogs | Books Coffee and Dreams</title>
+
+  <!-- Fonts + Tailwind -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Particles -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <link href="/logo.png" rel="icon">
+  <link href="/logo.png" rel="apple-touch-icon">
+
+  <style>
+    :root{--purple-1:#a855f7;--purple-2:#7c3aed}
+    body{font-family:'Outfit',sans-serif;background:linear-gradient(to bottom right,#f3e8ff,#ede9fe);background-size:200% 200%;animation:bgLuxury 25s ease infinite;color:#1f2937}
+    @keyframes bgLuxury{0%,100%{background-position:top left}50%{background-position:bottom right}}
+
+    #tsparticles{position:fixed;inset:0;z-index:-1}
+
+    .purple-gradient{background:linear-gradient(to right,var(--purple-1),var(--purple-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .lux-card{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.4);backdrop-filter:blur(16px);box-shadow:0 12px 30px rgba(128,90,213,0.2);transition:transform .3s ease,box-shadow .3s ease}
+    .lux-card:hover{transform:translateY(-5px);box-shadow:0 20px 40px rgba(128,90,213,0.3)}
+
+    header{transition:all .3s}
+    header.scrolled{padding-top:.5rem!important;padding-bottom:.5rem!important;backdrop-filter:blur(30px);background-color:rgba(255,255,255,.8);box-shadow:0 4px 20px rgba(168,85,247,.2)}
+
+    @keyframes fadeInDown{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}
+    .animate-fade-in-down{animation:fadeInDown 1s ease-out both}
+
+    .nav-link{position:relative;opacity:0;animation:fadeInUp .6s ease forwards}
+    @keyframes fadeInUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+    .nav-link::after{content:"";position:absolute;left:0;bottom:-4px;width:100%;height:2px;background:linear-gradient(to right,var(--purple-1),#ec4899);transform:scaleX(0);transform-origin:left;transition:transform .3s ease;box-shadow:0 0 8px rgba(236,72,153,.6)}
+    .nav-link:hover::after{transform:scaleX(1)}
+
+    /* Premium white blog card (B2) */
+    .blog-card{background:#fff;border-radius:14px;overflow:hidden;border:1px solid rgba(15,23,42,.04);box-shadow:0 16px 36px rgba(16,24,40,.06);transition:transform .22s ease,box-shadow .22s ease}
+    .blog-card:hover{transform:translateY(-8px);box-shadow:0 28px 60px rgba(16,24,40,.12)}
+    .blog-thumb{width:100%;height:220px;object-fit:cover}
+    .featured-badge{position:absolute;top:12px;left:12px;background:#fff6c2;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;color:#8a5200}
+    .tag{background:#e9d5ff;color:#6b21a8;font-size:.72rem;padding:4px 8px;border-radius:9999px;margin-right:6px;display:inline-block}
+
+    .skeleton{background:linear-gradient(90deg,#f3e8ff,#efe6ff,#f3e8ff);background-size:200% 100%;animation:shimmer 1.6s linear infinite;border-radius:12px}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+    @media (max-width:640px){.blog-thumb{height:160px}}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-100 via-purple-200 to-purple-300 text-gray-800">
+
+  <div id="tsparticles"></div>
+
+  <!-- HEADER -->
+  <header id="mainHeader" class="fixed top-0 w-full z-50 transition-all duration-300 bg-white/30 backdrop-blur-md border-b border-purple-200 shadow-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center animate-fade-in-down">
+      <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent cursor-pointer" onclick="location.href='index.html'">Books Coffee Dreams</h1>
+
+      <nav class="flex gap-4 font-semibold text-purple-900">
+        <a href="index.html" class="nav-link" style="animation-delay: 0.1s">Home</a>
+        <a href="content.html" class="nav-link" style="animation-delay: 0.2s">Content</a>
+        <a href="courses.html" class="nav-link" style="animation-delay: 0.3s">Courses</a>
+        <a href="blogs.html" class="nav-link" style="animation-delay: 0.4s">Blogs</a>
+        <a href="community.html" class="nav-link" style="animation-delay: 0.5s">Community</a>
+        <a href="staff-application.html" class="nav-link" style="animation-delay: 0.6s">Apply</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <img id="headerPhoto" class="hidden w-10 h-10 rounded-full border-2 border-purple-500 shadow cursor-pointer" onclick="location.href='profile.html'" alt="profile">
+        <button id="loginBtn" onclick="location.href='login.html'" class="hidden bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white px-4 py-2 rounded-full">Login</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="pt-48 pb-28 text-center px-6" data-aos="fade-up">
+    <h2 class="text-6xl font-extrabold purple-gradient mb-6">📚 All Blogs</h2>
+    <p class="text-xl text-gray-700 max-w-3xl mx-auto mb-6">Latest blogs, thoughts, study notes & updates</p>
+  </section>
+
+  <!-- SEARCH -->
+  <div class="max-w-lg mx-auto mb-12 px-6" data-aos="fade-up">
+    <input id="searchInput" placeholder="🔍 Search videos across all uploads..." class="w-full px-4 py-3 border-2 border-purple-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition" />
+  </div>
+
+  <!-- SKELETON -->
+  <div id="loadingSkeleton" class="max-w-7xl mx-auto px-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-16">
+    <div class="skeleton h-64"></div><div class="skeleton h-64"></div><div class="skeleton h-64"></div>
+  </div>
+
+  <!-- BLOG GRID -->
+  <main class="max-w-7xl mx-auto px-6">
+    <div id="blogContainer" class="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 mb-16"></div>
+
+    <div class="text-center mb-24">
+      <button id="loadMoreBtn" class="px-8 py-3 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-xl hover:scale-105 transition">Load More</button>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-32 text-center text-white bg-gradient-to-r from-purple-700 to-fuchsia-700 py-10 shadow-inner relative">
+    <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-fuchsia-500 opacity-20 blur-2xl animate-pulse-slow"></div>
+    <p class="relative z-10 font-semibold text-lg">Made with ❤️ by <span class="font-extrabold">Books Coffee and Dreams</span></p>
+    <p class="relative z-10 text-sm mt-2">© 2025 All rights reserved</p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({ duration: 1000, once: true });</script>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, collection, getDocs, query, orderBy, doc, updateDoc, increment } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.firebasestorage.app",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+      measurementId: "G-6Q46Z9ZF0D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const headerPhoto = document.getElementById('headerPhoto');
+    const loginBtn = document.getElementById('loginBtn');
+    const blogContainer = document.getElementById('blogContainer');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const loadingSkeleton = document.getElementById('loadingSkeleton');
+    const searchInput = document.getElementById('searchInput');
+
+    // Auth UI
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        headerPhoto.src = user.photoURL || '/default-avatar.png';
+        headerPhoto.classList.remove('hidden');
+        loginBtn.classList.add('hidden');
+      } else {
+        headerPhoto.classList.add('hidden');
+        loginBtn.classList.remove('hidden');
+      }
+    });
+
+    // Particles (match homepage)
+    tsParticles.load("tsparticles", {
+      fullScreen: { enable: false },
+      particles: {
+        number: { value: 70 },
+        color: { value: "#a855f7" },
+        links: { enable: true, distance: 130, color: "#c084fc", opacity: 0.3 },
+        move: { enable: true, speed: 0.7 },
+        opacity: { value: 0.3 },
+        size: { value: 3 }
+      },
+      interactivity: {
+        events: { onHover: { enable: true, mode: "repulse" } },
+        modes: { repulse: { distance: 80 } }
+      },
+      detectRetina: true
+    });
+
+    // Blogs fetch
+    let allBlogs = [];
+    let idx = 0;
+    const BATCH = 6;
+
+    function blogCard(b) {
+      return `
+      <div class="blog-card relative">
+        ${b.isFeatured ? `<div class="featured-badge">⭐ Featured</div>` : ''}
+        <div class="p-2">
+  <img src="${b.imageUrl || 'https://via.placeholder.com/1200x600'}" class="w-full aspect-video object-cover rounded-xl" alt="${(b.title||'').replace(/"/g,'')}" />
+</div>
+        <div class="p-5">
+          <h3 class="text-xl font-bold text-purple-800 mb-2">${b.title}</h3>
+          <p class="text-gray-600 text-sm mb-3 line-clamp-3">${b.description || ''}</p>
+          <div class="mb-3">${(b.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <div class="flex justify-between text-xs text-gray-500 items-center">
+            <div>👤 ${b.author||'Unknown'}</div>
+            <div>${b.date||''}</div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button onclick="openBlog('${b.id}')" class="px-4 py-2 rounded-md bg-white border text-purple-700 font-semibold hover:scale-105 transition">Read More →</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    async function loadBlogs(){
+      try{
+        const q = query(collection(db,'blogs'), orderBy('createdAt','desc'));
+        const snap = await getDocs(q);
+        allBlogs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        renderNext();
+      }catch(err){
+        console.error('Failed to load blogs', err);
+        loadingSkeleton.style.display='none';
+        blogContainer.innerHTML='<p class="text-center col-span-3 text-red-500">Failed to load blogs.</p>';
+      }
+    }
+
+    function renderNext(){
+      loadingSkeleton.style.display='none';
+      const slice = allBlogs.slice(idx, idx + BATCH);
+      slice.forEach(b=>{
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = blogCard(b);
+        blogContainer.appendChild(wrapper);
+      });
+      idx += BATCH;
+      if(idx >= allBlogs.length) loadMoreBtn.style.display = 'none';
+    }
+
+    loadMoreBtn.addEventListener('click', renderNext);
+
+    window.openBlog = async (id) => {
+      try{ await updateDoc(doc(db,'blogs',id),{views: increment(1)}); }catch(e){}
+      location.href = `/blog-detail.html?id=${id}`;
+    }
+
+    // Search
+    searchInput.addEventListener('input', function(){
+      const q = searchInput.value.trim().toLowerCase();
+      blogContainer.innerHTML = '';
+      idx = 0; // reset pagination for search results view
+
+      const filtered = allBlogs.filter(b=> (b.title||'').toLowerCase().includes(q) || (b.tags||[]).some(t=>t.toLowerCase().includes(q)) );
+      if(q === ''){
+        // empty → show initial batch
+        allBlogs.slice(0, BATCH).forEach(b=>{ const w=document.createElement('div'); w.innerHTML=blogCard(b); blogContainer.appendChild(w); });
+        idx = BATCH; loadMoreBtn.style.display = (idx < allBlogs.length) ? 'inline-block' : 'none';
+        return;
+      }
+
+      filtered.slice(0, BATCH).forEach(b=>{ const w=document.createElement('div'); w.innerHTML=blogCard(b); blogContainer.appendChild(w); });
+      loadMoreBtn.style.display = (filtered.length > BATCH) ? 'inline-block' : 'none';
+    });
+
+    // Init
+    loadBlogs();
+
+    // Header scroll
+    window.addEventListener('scroll', ()=>{ document.getElementById('mainHeader').classList.toggle('scrolled', window.scrollY > 50); });
+
+    // Nav delays
+    document.querySelectorAll('.nav-link').forEach((el,i)=> el.style.animationDelay = (0.1*(i+1))+'s');
+  </script>
+
+  <script>
+    // Particles already loaded above via tsParticles.load from module; small fallback in case
+    // ensure header animation class applied
+    document.addEventListener('DOMContentLoaded', ()=>{ document.querySelectorAll('.nav-link').forEach((el,i)=> el.style.animationDelay = (0.1*(i+1))+'s'); });
+  </script>
+
+</body>
+</html>

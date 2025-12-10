@@ -1,0 +1,364 @@
+<!-- Firebase-powered dynamic homepage for Books Coffee and Dreams (FULLY FIXED + IMPROVED) -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Books Coffee and Dreams</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+
+  <!-- Swiper -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Particles -->
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+
+  <!-- AOS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <!-- Favicon -->
+  <link href="/logo.png" rel="icon" />
+  <link href="/logo.png" rel="apple-touch-icon" />
+
+  <!-- STYLING -->
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(to bottom right, #f3e8ff, #ede9fe);
+      background-size: 200% 200%;
+      animation: bgLuxury 25s ease infinite;
+    }
+
+    @keyframes bgLuxury {
+      0%, 100% { background-position: top left; }
+      50% { background-position: bottom right; }
+    }
+
+    #tsparticles {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+    }
+
+    .purple-gradient {
+      background: linear-gradient(to right, #a855f7, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lux-card {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 30px rgba(128, 90, 213, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .lux-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(128, 90, 213, 0.3);
+    }
+
+    header {
+      transition: all 0.3s ease;
+    }
+
+    header.scrolled {
+      padding-top: 0.5rem !important;
+      padding-bottom: 0.5rem !important;
+      backdrop-filter: blur(30px);
+      background-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
+    }
+
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in-down {
+      animation: fadeInDown 1s ease-out both;
+    }
+
+    .nav-link {
+      position: relative;
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .nav-link::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, #a855f7, #ec4899);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      box-shadow: 0px 0px 8px rgba(236, 72, 153, 0.6);
+    }
+
+    .nav-link:hover::after {
+      transform: scaleX(1);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-purple-100 via-purple-200 to-purple-300 text-gray-800">
+
+  <div id="tsparticles"></div>
+
+  <!-- HEADER -->
+  <header id="mainHeader"
+    class="fixed top-0 w-full z-50 transition-all duration-300 bg-white/30 backdrop-blur-md border-b border-purple-200 shadow-md">
+
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center animate-fade-in-down">
+      <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-fuchsia-500 to-pink-500 bg-clip-text text-transparent">
+        Books Coffee Dreams
+      </h1>
+
+      <nav class="flex gap-4 font-semibold text-purple-900">
+        <a href="index.html" class="nav-link" style="animation-delay: 0.1s">Home</a>
+        <a href="content.html" class="nav-link" style="animation-delay: 0.2s">Content</a>
+        <a href="courses.html" class="nav-link" style="animation-delay: 0.3s">Courses</a>
+        <a href="blogs.html" class="nav-link" style="animation-delay: 0.4s">Blogs</a>
+        <a href="community.html" class="nav-link" style="animation-delay: 0.5s">Community</a>
+        <a href="/staff-application.html" class="nav-link" style="animation-delay: 0.6s">Apply</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <img id="headerPhoto" class="hidden w-10 h-10 rounded-full border-2 border-purple-500 shadow cursor-pointer"
+             onclick="window.location.href='profile.html'">
+        <button id="loginBtn"
+          onclick="window.location.href='login.html'"
+          class="hidden bg-gradient-to-r from-purple-600 to-fuchsia-500 text-white px-4 py-2 rounded-full">
+          Login
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="pt-48 pb-28 text-center px-6" data-aos="fade-up">
+    <h2 class="text-6xl font-extrabold purple-gradient mb-6">Elevate Your Mind. Embrace the Dream. ✨</h2>
+    <p class="text-xl text-gray-700 max-w-3xl mx-auto mb-10">
+      A luxurious study platform blending elegance, intelligence, and community. Your journey to brilliance begins here.
+    </p>
+    <a href="https://discord-login-backend.vercel.app/api/auth?login=discord"
+       class="inline-block bg-gradient-to-r from-purple-700 to-fuchsia-600 text-white px-10 py-4 rounded-full text-lg font-semibold shadow-2xl hover:scale-105 transition-all">
+      🚀 Explore Dashboard
+    </a>
+  </section>
+
+  <!-- IMAGE BANNER SLIDER -->
+  <div class="swiper myImageSlider w-full h-[220px] sm:h-[320px] md:h-[400px] lg:h-[460px] mb-16 px-6">
+    <div class="swiper-wrapper overflow-hidden rounded-2xl">
+      <div class="swiper-wrapper" id="bannerSlider"></div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <section class="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10"
+           id="homepageServices" data-aos="fade-up"></section>
+
+  <!-- TESTIMONIALS -->
+  <section class="mt-20 px-6 text-center" data-aos="fade-up">
+    <h3 class="text-3xl font-extrabold purple-gradient mb-8">💬 Student Love</h3>
+    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+         id="testimonialSection"></div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="mt-32 text-center text-white bg-gradient-to-r from-purple-700 to-fuchsia-700 py-10 shadow-inner relative">
+    <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-fuchsia-500 opacity-20 blur-2xl animate-pulse-slow"></div>
+    <p class="relative z-10 font-semibold text-lg">
+      Made with ❤️ by <span class="font-extrabold">Books Coffee and Dreams</span>
+    </p>
+    <p class="relative z-10 text-sm mt-2">© 2025 All rights reserved</p>
+  </footer>
+
+  <!-- FIREBASE -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, collection, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.firebasestorage.app",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee",
+      measurementId: "G-6Q46Z9ZF0D"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const photo = document.getElementById('headerPhoto');
+    const loginBtn = document.getElementById('loginBtn');
+    const serivceContainer = document.getElementById('homepageServices');
+    const testimonialContainer = document.getElementById('testimonialSection');
+    const bannerSlider = document.getElementById('bannerSlider');
+
+// Load Banners
+async function loadBanners() {
+  try {
+    const q = query(collection(db, 'banners'), orderBy('order'));
+    const snapshot = await getDocs(q);
+
+    bannerSlider.innerHTML = "";
+
+    snapshot.forEach(doc => {
+      const b = doc.data();
+
+      bannerSlider.innerHTML += `
+        <div class="swiper-slide">
+          <a href="${b.link || '#'}" target="_blank">
+            <img loading="lazy"
+              src="${b.imageUrl}"
+              class="w-full h-full object-cover object-center rounded-xl shadow-md"
+              alt="${b.title || 'Banner'}"/>
+          </a>
+        </div>
+      `;
+    });
+
+    // refresh Swiper after dynamic load
+    setTimeout(() => {
+      new Swiper('.myImageSlider', {
+        loop: true,
+        autoplay: { delay: 3000 },
+        slidesPerView: 1,
+        spaceBetween: 0,
+        observer: true,
+        observeParents: true
+      });
+    }, 200);
+
+  } catch (err) {
+    console.error("Failed to load banners:", err);
+  }
+}
+
+loadBanners();
+    // Login / User Photo Fix
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        photo.src = user.photoURL || "/default-avatar.png";
+        photo.classList.remove("hidden");
+        loginBtn.classList.add("hidden");
+      } else {
+        photo.classList.add("hidden");
+        loginBtn.classList.remove("hidden");
+      }
+    });
+
+    // Load Services
+    async function loadServices() {
+      try {
+        const q = query(collection(db, 'services'), orderBy('order'));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => {
+          const c = doc.data();
+          const card = document.createElement('div');
+          card.className = 'lux-card p-6 rounded-2xl';
+          card.innerHTML = `
+            <h3 class="text-2xl font-bold text-purple-800 mb-2">${c.icon || '📘'} ${c.title}</h3>
+            <p>${c.description}</p>`;
+          serivceContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to load Services:", err);
+      }
+    }
+
+    // Load Testimonials
+    async function loadTestimonials() {
+      try {
+        const snapshot = await getDocs(collection(db, 'testimonials'));
+        snapshot.forEach((doc) => {
+          const t = doc.data();
+          const card = document.createElement('div');
+          card.className = 'lux-card p-6 rounded-xl';
+          card.innerHTML = `
+            <p class="italic">“${t.message}”</p>
+            <p class="mt-3 font-bold text-purple-600">— ${t.name}, ${t.country}</p>`;
+          testimonialContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to load testimonials:", err);
+      }
+    }
+
+    loadServices();
+    loadTestimonials();
+  </script>
+
+  <!-- AOS -->
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>AOS.init({ duration: 1000, once: true });</script>
+
+  <!-- Particles -->
+  <script>
+    tsParticles.load("tsparticles", {
+      fullScreen: { enable: false },
+      particles: {
+        number: { value: 70 },
+        color: { value: "#a855f7" },
+        links: {
+          enable: true,
+          distance: 130,
+          color: "#c084fc",
+          opacity: 0.3
+        },
+        move: { enable: true, speed: 0.7 },
+        opacity: { value: 0.3 },
+        size: { value: 3 }
+      },
+      interactivity: {
+        events: { onHover: { enable: true, mode: "repulse" } },
+        modes: { repulse: { distance: 80 } }
+      },
+      detectRetina: true
+    });
+  </script>
+
+  <!-- Swiper -->
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script>
+    new Swiper('.myImageSlider', {
+      loop: false,
+      autoplay: false,
+      slidesPerView: 1,
+      spaceBetween: 0,
+      observer: true,
+      observeParents: true
+    });
+  </script>
+
+  <!-- Header Scroll Effect -->
+  <script>
+    window.addEventListener('scroll', () => {
+      const header = document.getElementById('mainHeader');
+      header.classList.toggle('scrolled', window.scrollY > 50);
+    });
+  </script>
+
+</body>
+</html>

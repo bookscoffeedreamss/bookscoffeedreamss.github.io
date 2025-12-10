@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Course • Books Coffee and Dreams</title>
+
+  <!-- Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#f6f8ff;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --glass: rgba(255,255,255,0.76);
+      --gold1:#facc15;
+      --gold2:#f59e0b;
+      --accent:#6b46ff;
+      --radius:20px;
+      --maxw:1180px;
+      --shadow-soft: 0 10px 30px rgba(16,24,40,0.06);
+      --shadow-strong: 0 28px 80px rgba(16,24,40,0.10);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;
+      background: linear-gradient(180deg,#fbfdff 0%,var(--bg) 100%);
+      color:#081028;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:28px 18px;
+    }
+    a{color:inherit;text-decoration:none}
+    button{font-family:inherit}
+    img{display:block;max-width:100%}
+
+    @media (prefers-reduced-motion: reduce){ *{transition:none!important;animation:none!important} }
+
+    /* container */
+    .section{ max-width: var(--maxw); margin: 0 auto 26px; padding: 0 14px; }
+
+    /* STICKY PROGRESS (top bar) */
+    .sticky-progress {
+      position: sticky;
+      top: 12px;
+      z-index: 60;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background: rgba(255,255,255,0.75);
+      border-radius:12px;
+      padding:8px 12px;
+      box-shadow:var(--shadow-soft);
+      border:1px solid rgba(16,24,40,0.04);
+      backdrop-filter: blur(6px);
+      margin-bottom:12px;
+    }
+    .sticky-title { font-weight:700; font-size:14px; color:#081028; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:420px; }
+    .sticky-track{ height:8px; background:rgba(16,24,40,0.06); border-radius:999px; overflow:hidden; flex:1 }
+    .sticky-fill{ height:100%; width:0%; background:linear-gradient(90deg,var(--gold1),var(--gold2)); transition:width .45s ease; border-radius:999px }
+    .sticky-percent{ font-size:13px; color:var(--muted); min-width:48px; text-align:right }
+
+    /* HERO - Elevated Glass Card */
+    .hero {
+      display:flex; gap:28px; align-items:stretch;
+      background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(250,250,252,0.88));
+      padding:28px; border-radius:var(--radius); box-shadow:var(--shadow-strong);
+      border:1px solid rgba(16,24,40,0.04);
+      transition: transform .18s cubic-bezier(.2,.9,.2,1);
+    }
+    .hero:hover{ transform: translateY(-4px); }
+
+    .hero-media { width:520px; flex-shrink:0; border-radius:14px; overflow:hidden; border:1px solid rgba(16,24,40,0.04); box-shadow: 0 16px 40px rgba(2,6,23,0.06); }
+    .hero-media img{ width:100%; height:100%; object-fit:cover; min-height:320px; display:block; }
+
+    .hero-info { flex:1; display:flex; flex-direction:column; gap:12px; justify-content:center; padding:8px 6px; }
+    .title { font-size:32px; margin:0; line-height:1.03; font-weight:800; color:#071127; letter-spacing:-0.01em }
+    .subtitle { margin:0; color:var(--muted); font-size:15px; max-width:60ch }
+
+    .meta-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px }
+    .pill { padding:8px 12px; border-radius:999px; background:rgba(16,24,40,0.03); font-weight:700; color:#071127; font-size:13px; border:1px solid rgba(16,24,40,0.02) }
+
+    .progress-row { display:flex; gap:18px; align-items:center; margin-top:10px }
+    .track { flex:1; height:12px; background: rgba(16,24,40,0.06); border-radius:999px; overflow:hidden }
+    .fill { height:100%; width:0%; background: linear-gradient(90deg,var(--gold1),var(--gold2)); transition: width .45s ease; border-radius:999px; }
+    .progress-meta { font-size:13px; color:var(--muted); min-width:120px; text-align:right }
+
+    .hero-actions { display:flex; gap:14px; align-items:center; margin-top:12px }
+    .price { font-weight:900; font-size:20px; color:#071127; min-width:150px; text-align:right }
+    .btn-buy {
+      background: linear-gradient(90deg,var(--gold1),var(--gold2));
+      padding:12px 22px; border-radius:12px; border:none; font-weight:900; cursor:pointer;
+      color:#071127; box-shadow: 0 14px 36px rgba(250,204,21,0.12);
+      transition: transform .12s ease, box-shadow .12s;
+    }
+    .btn-buy:active{ transform: translateY(1px) }
+
+    .access-note { font-size:13px; color:var(--muted); margin-top:8px }
+
+    /* ABOUT & TEACHER & CONTENT cards */
+    .card { background:var(--card); border-radius:12px; padding:16px; box-shadow:var(--shadow-soft); border:1px solid rgba(16,24,40,0.02); margin-top:14px }
+    .card h3{ margin:0; font-size:16px; font-weight:700; color:#071127 }
+
+    /* Module - stacked cards with timeline */
+    .module { margin-top:12px; padding:14px; border-radius:12px; background:linear-gradient(180deg,#fff,#fbfbff); border:1px solid rgba(16,24,40,0.03); box-shadow: 0 8px 18px rgba(2,6,23,0.04) }
+    .module-head { display:flex; justify-content:space-between; align-items:center; gap:12px }
+    .module-title { font-weight:800; font-size:15px; color:#071127 }
+
+    .timeline { margin-top:12px; position:relative; padding-left:28px; }
+    .timeline::before { content:""; position:absolute; left:12px; top:0; bottom:0; width:2px; background:linear-gradient(180deg, rgba(16,24,40,0.05), rgba(16,24,40,0.02)); border-radius:2px; }
+    .lesson-node { position:relative; margin-bottom:12px; display:flex; gap:12px; align-items:flex-start; }
+    .node-dot { position:absolute; left:4px; top:6px; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--gold1); box-shadow:0 6px 18px rgba(250,204,21,0.08) }
+    .lesson { margin-left:6px; display:flex; gap:12px; align-items:center; padding:10px; border-radius:10px; transition: transform .12s ease, box-shadow .12s; }
+    .lesson:hover{ transform: translateY(-4px); box-shadow: 0 14px 36px rgba(2,6,23,0.06) }
+    .lesson-thumb { width:140px; height:80px; border-radius:8px; object-fit:cover; border:1px solid rgba(16,24,40,0.03) }
+    .lesson-info { flex:1 }
+    .lesson-title { font-weight:700; color:#071127 }
+    .lesson-desc { font-size:13px; color:var(--muted); margin-top:6px }
+    .lesson-actions { min-width:140px; text-align:right }
+
+    .btn-outline { padding:8px 12px; border-radius:10px; border:1px solid rgba(16,24,40,0.06); background:white; font-weight:700; cursor:pointer }
+    .btn-locked { padding:8px 12px; border-radius:10px; border:1px dashed rgba(16,24,40,0.06); color:var(--muted); background:transparent }
+
+    /* Teacher */
+    .teacher-row { display:flex; gap:14px; align-items:center }
+    .teacher-avatar { width:78px; height:78px; border-radius:999px; object-fit:cover; border:1px solid rgba(16,24,40,0.04) }
+
+    /* Utilities */
+    .small{ font-size:13px; color:var(--muted) }
+    .hide{ display:none }
+
+    /* responsive */
+    @media (max-width:1024px){
+      .hero-media{ width:420px }
+    }
+    @media (max-width:860px){
+      body{ padding:18px 10px }
+      .hero{ flex-direction:column; gap:16px; align-items:stretch; padding:20px }
+      .hero-media{ width:100%; min-height:200px }
+      .title{ font-size:24px }
+      .price{ text-align:left; min-width:unset }
+      .progress-meta{ text-align:left; min-width:unset }
+      .sticky-progress{ top:8px; padding:6px 10px }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="section">
+    <!-- STICKY PROGRESS BAR -->
+    <div id="stickyProgress" class="sticky-progress" aria-hidden="false">
+      <div id="stickyTitle" class="sticky-title">Course</div>
+      <div class="sticky-track"><div id="stickyFill" class="sticky-fill"></div></div>
+      <div id="stickyPercent" class="sticky-percent">0%</div>
+    </div>
+
+    <!-- HERO -->
+    <div class="hero" id="heroBlock">
+      <div class="hero-media">
+        <img id="courseThumb" src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png" alt="Course thumbnail">
+      </div>
+
+      <div class="hero-info">
+        <h1 id="title" class="title">Loading course…</h1>
+        <p id="subtitle" class="subtitle">A beautifully designed course experience — premium, elegant and powerful.</p>
+
+        <div class="meta-row">
+          <div id="tagEl" class="pill hide">Tag</div>
+          <div id="duration" class="pill">—</div>
+        </div>
+
+        <div class="progress-row">
+          <div class="track"><div id="progressFill" class="fill"></div></div>
+          <div id="progressText" class="progress-meta">0% completed</div>
+        </div>
+
+        <div class="hero-actions">
+          <div id="priceBox" class="price">—</div>
+          <button id="enrollBtn" class="btn-buy hide">Enroll • Buy</button>
+        </div>
+
+        <div id="accessNote" class="access-note">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <div class="section">
+    <div class="card">
+      <h3>About this course</h3>
+      <div id="longDesc" class="small" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- TEACHER -->
+  <div class="section">
+    <div id="teacherCard" class="card hide">
+      <div class="teacher-row">
+        <img id="teacherPhoto" class="teacher-avatar" src="https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png" alt="Teacher">
+        <div>
+          <div id="teacherName" style="font-weight:700"></div>
+          <div id="teacherPosition" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT / MODULES -->
+  <div class="section">
+    <div class="card">
+      <h3>Course Content</h3>
+      <div id="modulesRoot" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- confetti canvas -->
+  <canvas id="confettiCanvas" style="position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none"></canvas>
+
+  <!-- SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Firebase + Razorpay logic -->
+  <script type="module">
+    /* ============= CONFIG ============= */
+    const WORKER_ORIGIN = "https://bcd-razorpay-worker.anshumanbahekar-iitb.workers.dev";
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyACEG_4v-3ROgMNOlFZsAllC9VcYb8Nm2A",
+      authDomain: "bcd-discord.firebaseapp.com",
+      projectId: "bcd-discord",
+      storageBucket: "bcd-discord.appspot.com",
+      messagingSenderId: "278895155371",
+      appId: "1:278895155371:web:177a468f5fa3f0abfe3fee"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    /* ============= UI REFS ============= */
+    const courseThumb = document.getElementById('courseThumb');
+    const tagEl = document.getElementById('tagEl');
+    const durationEl = document.getElementById('duration');
+    const titleEl = document.getElementById('title');
+    const subtitleEl = document.getElementById('subtitle');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const stickyFill = document.getElementById('stickyFill');
+    const stickyPercent = document.getElementById('stickyPercent');
+    const stickyTitle = document.getElementById('stickyTitle');
+    const priceBox = document.getElementById('priceBox');
+    const enrollBtn = document.getElementById('enrollBtn');
+    const accessNote = document.getElementById('accessNote');
+    const longDesc = document.getElementById('longDesc');
+    const teacherCard = document.getElementById('teacherCard');
+    const teacherPhoto = document.getElementById('teacherPhoto');
+    const teacherName = document.getElementById('teacherName');
+    const teacherPosition = document.getElementById('teacherPosition');
+    const modulesRoot = document.getElementById('modulesRoot');
+    const confettiCanvas = document.getElementById('confettiCanvas');
+
+    /* ============= STATE ============= */
+    let courseId = null;
+    let courseData = null;
+    let currentUser = null;
+    let hasAccess = false;
+    let userProgress = {};
+
+    function getCourseIdFromUrl(){
+      const q = new URLSearchParams(location.search);
+      return q.get('id') || q.get('courseId');
+    }
+    function escapeHtml(s=''){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    /* ===== confetti ===== */
+    function runConfettiBrief(){
+      try{
+        const ctx = confettiCanvas.getContext('2d');
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+        confettiCanvas.style.display = 'block';
+        const pieces=[]; const colours=['#facc15','#f59e0b','#7c5cff','#ff7b8a','#06b6d4'];
+        for(let i=0;i<120;i++){
+          pieces.push({ x: Math.random()*confettiCanvas.width, y:-40, w:6+Math.random()*10, h:8+Math.random()*10, vx:-3+Math.random()*6, vy:2+Math.random()*5, r:Math.random()*360, c:colours[Math.floor(Math.random()*colours.length)] });
+        }
+        let t=0;
+        const raf = ()=>{
+          t++;
+          ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+          for(const p of pieces){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r*Math.PI/180); ctx.fillStyle=p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+          if(t<180) requestAnimationFrame(raf); else { confettiCanvas.style.display='none'; ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); }
+        };
+        raf();
+      }catch(e){ console.warn('confetti error', e); }
+    }
+
+    /* ===== boot ===== */
+    courseId = getCourseIdFromUrl();
+    if(!courseId){ Swal.fire('Missing Course ID','Open this page with ?id=COURSE_ID','error'); throw new Error('missing id'); }
+
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      await loadCourse();
+      if(currentUser) await loadUserProgress();
+      await computeAccess();
+      await loadTeacherBlock();
+      renderCourse();
+      setupScrollProgress(); // connects sticky progress to modules
+    });
+
+    /* ===== Firestore data ===== */
+    async function loadCourse(){
+      const snap = await getDoc(doc(db,'courses',courseId));
+      if(!snap.exists()){
+        Swal.fire('Not found','Course not found','error');
+        throw new Error('course not found');
+      }
+      courseData = snap.data();
+    }
+
+    async function computeAccess(){
+      hasAccess = false;
+      const priceNumber = Number(courseData?.price ?? 0);
+      const isPaidFlag = courseData?.isPaid === true || String(courseData?.isPaid).toLowerCase() === 'true';
+      const courseIsPaid = isPaidFlag || (Number.isFinite(priceNumber) && priceNumber > 0);
+      if(!courseIsPaid){ hasAccess = true; return; }
+      if(!currentUser){ hasAccess = false; return; }
+
+      try{
+        const q = query(collection(db,'purchases'), where('uid','==', currentUser.uid), where('courseId','==', courseId));
+        const snaps = await getDocs(q);
+        if(!snaps.empty) hasAccess = true;
+      }catch(e){ console.error('purchase check err', e); hasAccess=false; }
+    }
+
+    async function loadUserProgress(){
+      userProgress = {};
+      if(!currentUser) return;
+      try{
+        const q = query(collection(db,'userCourseProgress'), where('uid','==', currentUser.uid), where('courseId','==', courseId));
+        const snaps = await getDocs(q);
+        snaps.forEach(snap=>{ const d=snap.data(); userProgress[`${d.moduleIndex}:${d.lessonIndex}`] = { completed: !!d.completed, lastTime: d.lastTime || 0 }; });
+      }catch(e){ console.warn('progress load err', e); }
+    }
+
+    async function loadTeacherBlock(){
+      const teachers = courseData.teachers || [];
+      if(!teachers.length){ teacherCard.classList.add('hide'); return; }
+      teacherCard.classList.remove('hide');
+
+      const names = teachers.map(t => typeof t === 'object' ? (t.name || 'Unknown') : (t || 'Unknown'));
+      teacherName.textContent = names.join(', ');
+
+      let main = teachers[0];
+      let uid = (typeof main === 'object' && main.uid) ? main.uid : null;
+      let photo = null;
+      if(uid){
+        try{
+          const s = await getDoc(doc(db,'staff',uid));
+          if(s.exists()){
+            const st = s.data();
+            photo = st.photoURL || st.profileURL || null;
+            teacherPosition.textContent = st.position || st.school || '';
+          }
+        }catch(e){ console.warn('staff load err', e); }
+      }
+      teacherPhoto.src = photo || courseData.teacherPhotoURL || 'https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png';
+    }
+
+    /* ===== render ===== */
+    function renderCourse(){
+      titleEl.textContent = courseData.title || 'Untitled';
+      subtitleEl.textContent = courseData.subtitle || '';
+      courseThumb.src = courseData.thumbnailURL || 'https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png';
+      longDesc.innerHTML = courseData.description || '';
+
+      if(courseData.tags?.length){ tagEl.textContent = courseData.tags.join(' • '); tagEl.classList.remove('hide'); } else tagEl.classList.add('hide');
+      durationEl.textContent = courseData.duration || '';
+
+      const priceNumber = Number(courseData?.price ?? 0);
+      const isPaidFlag = courseData?.isPaid === true || String(courseData?.isPaid).toLowerCase() === 'true';
+      const courseIsPaid = isPaidFlag || (Number.isFinite(priceNumber) && priceNumber > 0);
+
+      if(courseIsPaid){
+        priceBox.innerHTML = `<div style="opacity:.95;font-size:13px">Paid course</div><div style="font-weight:900;font-size:20px">₹ ${priceNumber.toLocaleString()}</div>`;
+        if(hasAccess){ enrollBtn.classList.add('hide'); accessNote.textContent = 'You have access to this course'; }
+        else { enrollBtn.classList.remove('hide'); accessNote.textContent = 'Purchase to unlock lessons'; }
+      } else {
+        priceBox.innerHTML = `<div style="opacity:.95;font-size:13px">Free course</div>`;
+        enrollBtn.classList.add('hide'); accessNote.textContent = 'This course is free to access';
+      }
+
+      // progress
+      const totalLessons = (courseData.modules || []).reduce((n,m)=> n + ((m.lessons && m.lessons.length) || 0), 0);
+      const completed = Object.values(userProgress).filter(p => p.completed).length;
+      const pct = totalLessons ? Math.round((completed/totalLessons)*100) : 0;
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `${pct}% completed`;
+      stickyFill.style.width = pct + '%';
+      stickyPercent.textContent = `${pct}%`;
+
+      // modules -> stacked with timeline nodes
+      modulesRoot.innerHTML = '';
+      (courseData.modules || []).forEach((m, mi)=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'module';
+        wrap.innerHTML = `
+          <div class="module-head">
+            <div>
+              <div class="small">Module ${mi+1}</div>
+              <div class="module-title" style="margin-top:6px">${escapeHtml(m.title||'Untitled Module')}</div>
+            </div>
+            <div class="small">${(m.lessons||[]).length} lessons</div>
+          </div>
+          <div class="timeline" id="timeline-${mi}"></div>
+        `;
+        modulesRoot.appendChild(wrap);
+        const timeline = wrap.querySelector(`#timeline-${mi}`);
+        (m.lessons || []).forEach((lesson, li)=>{
+          const locked = courseIsPaid && !hasAccess;
+          const done = userProgress[`${mi}:${li}`]?.completed;
+          const node = document.createElement('div');
+          node.className = 'lesson-node';
+          node.innerHTML = `
+            <div class="node-dot"></div>
+            <div class="lesson">
+              <img class="lesson-thumb" src="${lesson.thumbnail || 'https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/assets/images/account_logo_default.png'}" alt="">
+              <div class="lesson-info">
+                <div class="lesson-title">${escapeHtml(lesson.title||'Untitled')}</div>
+                <div class="lesson-desc">${escapeHtml(lesson.description||'')}</div>
+              </div>
+              <div class="lesson-actions">
+                ${done?'<div style="color:#10b981;font-weight:800">Completed</div>':''}
+                <div style="margin-top:8px">
+                  ${ locked ? `<button class="btn-locked">Locked 🔒</button>` : `<button class="btn-outline open-lesson" data-mi="${mi}" data-li="${li}">Open</button>` }
+                </div>
+              </div>
+            </div>
+          `;
+          timeline.appendChild(node);
+        });
+      });
+
+      // attach handlers for open-lesson
+      document.querySelectorAll('.open-lesson').forEach(btn=>{
+        btn.onclick = ()=>{
+          if(!hasAccess){
+            Swal.fire('Locked','Purchase the course to access lessons','warning');
+            return;
+          }
+          const mi = btn.dataset.mi, li = btn.dataset.li;
+          location.href = `lesson-player.html?courseId=${courseId}&module=${mi}&lesson=${li}`;
+        };
+      });
+
+      // update sticky title to course title
+      stickyTitle.textContent = courseData.title || 'Course';
+    }
+
+    /* ============= Worker / Razorpay ============= */
+    async function createOrderOnWorker(amountRupees){
+      const url = WORKER_ORIGIN.replace(/\/+$/,'') + '/createOrder';
+      const body = { amount: amountRupees, amountIsPaise: false };
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), credentials:'omit' });
+      const json = await res.json();
+      if(!res.ok) throw new Error(json?.error || 'createOrder failed');
+      return json;
+    }
+
+    async function verifyPaymentOnWorker({ razorpay_order_id, razorpay_payment_id, razorpay_signature }){
+      const url = WORKER_ORIGIN.replace(/\/+$/,'') + '/verifyPayment';
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ razorpay_order_id, razorpay_payment_id, razorpay_signature }), credentials:'omit' });
+      const json = await res.json();
+      if(!res.ok) throw new Error(json?.error || 'verifyPayment failed');
+      return json;
+    }
+
+    async function savePurchaseRecord({ orderId, paymentId, amount }) {
+      if(!currentUser) return;
+      try{ await addDoc(collection(db,'purchases'), { uid: currentUser.uid, courseId, orderId, paymentId, amount, createdAt: serverTimestamp() }); }
+      catch(e){ console.warn('save purchase err', e); }
+    }
+
+    function loadRazorpayScript(){
+      return new Promise((res, rej)=>{
+        if(window.Razorpay) return res(true);
+        const existing = Array.from(document.getElementsByTagName('script')).find(s => s.src && s.src.includes('checkout.razorpay.com/v1/checkout.js'));
+        if(existing){ existing.addEventListener('load', ()=> res(true)); existing.addEventListener('error', ()=> rej(new Error('Failed to load Razorpay script'))); return; }
+        const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = ()=> res(true); s.onerror = ()=> rej(new Error('Failed to load Razorpay script')); document.head.appendChild(s);
+      });
+    }
+
+    /* ============= Checkout flow (CTA) ============= */
+    enrollBtn.onclick = async () => {
+      if(!courseData) return Swal.fire('Error','Course data not loaded','error');
+
+      // ensure user logged in
+      if(!currentUser){
+        const r = await Swal.fire({ title:'Sign in required', text:'You need to sign in to purchase this course.', icon:'info', showCancelButton:true, confirmButtonText:'Sign in' });
+        if(r.isConfirmed) location.href = 'login.html';
+        return;
+      }
+
+      const amountRupees = Number(courseData.price || 0);
+      if(!Number.isFinite(amountRupees) || amountRupees <= 0) return Swal.fire('Invalid amount','This course has no valid price set','error');
+
+      let orderResp;
+      try{
+        const { isConfirmed, value } = await Swal.fire({
+          title:'Confirm purchase',
+          html:`<strong>${escapeHtml(courseData.title)}</strong><div style="margin-top:8px">Price: <strong>₹ ${amountRupees.toLocaleString()}</strong></div>`,
+          showCancelButton:true, confirmButtonText:'Pay now', cancelButtonText:'Cancel',
+          preConfirm: async ()=> { Swal.showLoading(); return await createOrderOnWorker(amountRupees); },
+          allowOutsideClick: ()=> !Swal.isLoading()
+        });
+        if(!isConfirmed) return;
+        orderResp = value;
+      }catch(err){
+        console.error(err);
+        Swal.fire('Error','Unable to start payment: ' + (err.message || err),'error');
+        return;
+      }
+
+      const razorpayOrderId = orderResp?.order_id || orderResp?.orderId || orderResp?.id || orderResp?.id_string || orderResp?.razorpay_order_id || null;
+      const keyId = orderResp?.key_id || orderResp?.key || orderResp?.keyId || null;
+      const amountPaise = orderResp?.amount || orderResp?.requested_amount_in_paise || Math.round(amountRupees*100);
+
+      if(!razorpayOrderId || !keyId){ Swal.fire('Error','Invalid order returned from server','error'); return; }
+
+      try{ await loadRazorpayScript(); } catch(e){ Swal.fire('Error','Failed to load payment SDK','error'); return; }
+
+      const options = {
+        key: keyId,
+        amount: amountPaise,
+        currency: orderResp?.currency || 'INR',
+        name: 'Books Coffee and Dreams',
+        description: courseData.title || 'Course purchase',
+        image: courseData.thumbnailURL || 'https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/main/logo.png',
+        order_id: razorpayOrderId,
+        handler: async function (resp){
+          Swal.fire({ title:'Verifying payment...', allowOutsideClick:false, didOpen: ()=> Swal.showLoading() });
+          try{
+            const verify = await verifyPaymentOnWorker(resp);
+            if(verify && verify.verified){
+              await savePurchaseRecord({ orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, amount: amountRupees });
+              hasAccess = true;
+              enrollBtn.classList.add('hide');
+              accessNote.textContent = 'You have access to this course';
+              Swal.close();
+              runConfettiBrief();
+              await Swal.fire({ icon:'success', title:'Payment successful', html:`<div>Payment ID: <strong>${escapeHtml(resp.razorpay_payment_id)}</strong></div>` });
+              // refresh UI progress
+              if(currentUser) await loadUserProgress();
+              renderCourse();
+            } else {
+              Swal.fire('Verification failed','Payment could not be verified','error');
+            }
+          }catch(err){
+            console.error('verify/save error', err);
+            Swal.fire('Error','Payment verification failed: '+(err.message||err),'error');
+          }
+        },
+        prefill: currentUser ? { name: currentUser.displayName || '', email: currentUser.email || '' } : {},
+        theme: { color: "#f59e0b" }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (resp){
+        console.warn('payment.failed', resp);
+        Swal.fire('Payment failed','Payment failed or was cancelled. Please try again.','error');
+      });
+
+      rzp.open();
+    };
+
+    /* ============= Sticky progress behaviour =============
+       - As the user scrolls through modules, update sticky progress
+       - Also update percent when progress changes
+    */
+    function setupScrollProgress(){
+      const observerOpts = { root: null, rootMargin: '0px', threshold: 0.2 };
+      const moduleEls = Array.from(document.querySelectorAll('.module'));
+      if(!moduleEls.length) return;
+
+      const onIntersect = (entries) => {
+        // pick first visible module (by index)
+        const visible = entries.filter(e=>e.isIntersecting).sort((a,b)=> moduleEls.indexOf(a.target) - moduleEls.indexOf(b.target));
+        if(visible.length){
+          const idx = moduleEls.indexOf(visible[0].target);
+          // set stickyTitle to module name
+          const moduleTitle = visible[0].target.querySelector('.module-title')?.textContent || titleEl.textContent;
+          stickyTitle.textContent = moduleTitle;
+        } else {
+          stickyTitle.textContent = titleEl.textContent;
+        }
+      };
+
+      const io = new IntersectionObserver(onIntersect, observerOpts);
+      moduleEls.forEach(el=> io.observe(el));
+    }
+
+    /* ============= END ============= */
+  </script>
+</body>
+</html>
