@@ -64,29 +64,33 @@
 }
 
     .chapter-tile img { width:70%; height:70%; object-fit:contain; border-radius:8px; }
-    .chapter-actions {
+   .chapter-actions {
   position: absolute;
   bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 10px;
+
   background: rgba(255,255,255,0.9);
   padding: 6px 12px;
   border-radius: 10px;
   backdrop-filter: blur(6px);
   z-index: 10;
 
-  /* NEW — Hide by default */
+  /* Hide whole box */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transform: translateX(-50%) translateY(6px);
+  transition: opacity .2s ease, transform .2s ease;
 }
 
 .chapter-tile:hover .chapter-actions {
   opacity: 1;
   pointer-events: auto;
+  transform: translateX(-50%) translateY(0px);
 }
+
 
 .chapter-actions img {
   width: 16px;
