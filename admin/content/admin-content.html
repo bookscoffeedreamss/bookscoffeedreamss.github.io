@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
   <style>
-    :root { --accent1: #7c3aed; --accent2: #6d28d9; }
-    body { font-family: Inter, sans-serif; background: #f6f1ff; min-height: 100vh; }
+    :root { --accent1: #7c3aed; --accent2: #6d28d9; --glass-bg: rgba(255,255,255,0.65); }
+    body { font-family: Inter, sans-serif; background: linear-gradient(180deg,#f6f1ff, #efe8ff); min-height: 100vh; }
     .sidebar {
       background: linear-gradient(180deg, #eadeff, #d1b8ff, #b99cff);
       border-radius: 24px;
@@ -33,17 +33,33 @@
       transition: 0.18s; white-space: nowrap;
     }
     .nav-item:hover { background: rgba(255,255,255,0.6); transform: translateX(4px); }
-    .nav-active { background: rgba(255,255,255,0.8); font-weight: 700; box-shadow: 0 6px 18px rgba(99,102,241,0.08); }
+    .nav-active { background: rgba(255,255,255,0.85); font-weight: 700; box-shadow: 0 6px 18px rgba(99,102,241,0.08); }
     .card { background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 6px 26px rgba(13,14,18,0.04); }
     .input-rounded { border-radius: 10px; }
     .big-banner-preview { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; display:block; }
     .flex-gap { gap: 12px; display:flex; align-items:center; }
     .muted { color: #6b7280; font-size: 0.95rem; }
-    /* small responsiveness */
-    @media (max-width: 960px) {
-      .sidebar { width: 100%; height: auto; border-radius: 12px; }
-      .layout { flex-direction: column; gap: 18px; padding: 16px; }
-    }
+
+    /* ICONS - Premium Glass Card Grid */
+    .subjects-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap:18px; margin-top:18px; }
+    .subject-card { position: relative; background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.6)); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.6); padding:16px; border-radius:14px; box-shadow: 0 8px 30px rgba(69,57,163,0.06); transition: transform .18s, box-shadow .18s; }
+    .subject-card:hover { transform: translateY(-6px); box-shadow: 0 18px 40px rgba(99,102,241,0.12); }
+    .subject-card .title { font-weight:700; font-size:15px; display:flex; align-items:center; gap:12px; }
+    .subject-card .meta { color:#6b7280; font-size:13px; margin-top:6px; }
+    .subject-actions { position:absolute; top:10px; right:10px; display:flex; gap:6px; }
+    .btn-ghost { background: transparent; border: none; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:14px; }
+
+    .chapter-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(84px,1fr)); gap:10px; margin-top:12px; }
+    .chapter-tile { width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative; background:linear-gradient(180deg,#fff,#f3f2ff); box-shadow: 0 6px 14px rgba(8,7,25,0.04); }
+    .chapter-tile img { width:70%; height:70%; object-fit:contain; border-radius:8px; }
+    .chapter-actions { position:absolute; top:6px; right:6px; display:flex; gap:6px; }
+    .fab-upload { position: absolute; bottom: 14px; right: 14px; background: linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; border:none; width:48px; height:48px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow: 0 8px 18px rgba(124,58,237,0.28); cursor:pointer; }
+
+    /* modal styles (Swal default looks good; small helper) */
+    .small-muted { color:#9aa0b0; font-size:13px; }
+
+    /* responsive */
+    @media (max-width:960px){ .sidebar{ width:100%; height:auto; border-radius:12px } .layout{ flex-direction:column; gap:18px; padding:16px } .subjects-grid{ grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); } }
   </style>
 </head>
 
@@ -92,13 +108,13 @@
         <div class="flex items-start justify-between">
           <div>
             <h1 class="text-2xl font-bold">Manage Content | BCD</h1>
-            <p class="muted mt-1">Manage Banner, Service cards, Testimonial cards and Annoucements</p>
+            <p class="muted mt-1">Manage Banner, Service cards, Testimonial cards and Announcements</p>
           </div>
           <div class="text-right muted small"></div>
         </div>
       </div>
 
-      <!-- BANNERS (big full-width previews as requested) -->
+      <!-- BANNERS (kept as-is) -->
       <section id="view-banners" class="card">
         <div class="flex items-start justify-between">
           <div>
@@ -111,16 +127,15 @@
         </div>
 
         <div class="mt-4 grid gap-3">
-          <!-- Upload panel (ONLY file + upload + clear) -->
-<div class="grid sm:grid-cols-3 gap-3 items-center">
-  <input id="bannerFile" type="file" accept="image/*" class="p-2 border input-rounded" />
-</div>
+          <div class="grid sm:grid-cols-3 gap-3 items-center">
+            <input id="bannerFile" type="file" accept="image/*" class="p-2 border input-rounded" />
+          </div>
 
-<div class="flex gap-2 mt-2">
-  <button id="uploadBannerBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-md font-semibold">Upload Banner</button>
-  <button id="clearBannerForm" class="bg-white border py-2 px-4 rounded-md">Clear</button>
-  <div id="bannerUploadStatus" class="muted ml-3"></div>
-</div>
+          <div class="flex gap-2 mt-2">
+            <button id="uploadBannerBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-md font-semibold">Upload Banner</button>
+            <button id="clearBannerForm" class="bg-white border py-2 px-4 rounded-md">Clear</button>
+            <div id="bannerUploadStatus" class="muted ml-3"></div>
+          </div>
         </div>
 
         <hr class="my-4" />
@@ -171,26 +186,28 @@
 
         <div id="announcementsList" class="space-y-3"></div>
       </section>
-      <!-- ICONS LIBRARY -->
-<section id="view-icons" class="card hidden">
-  <h2 class="text-xl font-semibold mb-3">Subject & Chapter Icons Library</h2>
 
-  <h3 class="font-semibold mt-3">Upload Icon</h3>
-  <input id="iconFile" type="file" accept="image/*" class="p-2 border rounded-md mt-2" />
+      <!-- ICONS LIBRARY (NEW PREMIUM UI) -->
+      <section id="view-icons" class="card hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Subject & Chapter Icons Library</h2>
+            <p class="muted mt-1">Create subjects and upload chapter icons. Click a subject to expand its icons.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button id="btn-add-subject" class="bg-white border py-2 px-3 rounded-md font-semibold">+ Add Subject</button>
+          </div>
+        </div>
 
-  <div class="flex gap-2 mt-3">
-    <button id="uploadSubjectIcon" class="bg-purple-600 text-white py-2 px-4 rounded-md">Upload Subject Icon</button>
-    <button id="uploadChapterIcon" class="bg-indigo-600 text-white py-2 px-4 rounded-md">Upload Chapter Icon</button>
-  </div>
+        <div id="subjectsGrid" class="subjects-grid">
+          <!-- subject cards render here -->
+        </div>
 
-  <hr class="my-5">
+        <!-- hidden file inputs used for uploads -->
+        <input id="hiddenChapterFile" type="file" accept="image/*" style="display:none" />
+        <input id="hiddenSubjectIconFile" type="file" accept="image/*" style="display:none" />
+      </section>
 
-  <h3 class="font-semibold">Subject Icons</h3>
-  <div id="subjectIconsList" class="grid grid-cols-4 gap-3 mt-2"></div>
-
-  <h3 class="font-semibold mt-6">Chapter Icons</h3>
-  <div id="chapterIconsList" class="grid grid-cols-4 gap-3 mt-2"></div>
-</section>
     </main>
   </div>
 
@@ -227,40 +244,41 @@
     const navServices = document.getElementById("nav-services");
     const navTestimonials = document.getElementById("nav-testimonials");
     const navAnnouncements = document.getElementById("nav-announcements");
+    const navIcons = document.getElementById("nav-icons");
 
     const viewBanners = document.getElementById("view-banners");
     const viewServices = document.getElementById("view-services");
     const viewTestimonials = document.getElementById("view-testimonials");
     const viewAnnouncements = document.getElementById("view-announcements");
+    const viewIcons = document.getElementById("view-icons");
 
-    const navIcons = document.getElementById("nav-icons");
-const viewIcons = document.getElementById("view-icons");
-
+    // banners
     const bannersList = document.getElementById("bannersList");
     const bannerFile = document.getElementById("bannerFile");
-    const bannerTitle = document.getElementById("bannerTitle");
-    const bannerLink = document.getElementById("bannerLink");
     const uploadBannerBtn = document.getElementById("uploadBannerBtn");
     const uploadStatus = document.getElementById("bannerUploadStatus");
-    const cloudNameInput = document.getElementById("cloudName");
-    const uploadPresetInput = document.getElementById("uploadPreset");
-    const cloudFolderInput = document.getElementById("cloudFolder");
 
-    // Services refs
+    // services
     const serviceList = document.getElementById("serviceList");
     const addServiceBtn = document.getElementById("addServiceBtn");
 
-    // Testimonials refs
+    // testimonials
     const testimonialList = document.getElementById("testimonialList");
     const addTestimonialBtn = document.getElementById("addTestimonialBtn");
 
-    // Announcements refs
+    // announcements
     const announcementsList = document.getElementById("announcementsList");
+
+    // icons ui
+    const subjectsGrid = document.getElementById('subjectsGrid');
+    const btnAddSubject = document.getElementById('btn-add-subject');
+    const hiddenChapterFile = document.getElementById('hiddenChapterFile');
+    const hiddenSubjectIconFile = document.getElementById('hiddenSubjectIconFile');
 
     // NAV helpers
     function showView(name) {
       [viewBanners, viewServices, viewTestimonials, viewAnnouncements, viewIcons]
-  .forEach(v => v.classList.add("hidden"));
+    .forEach(v => v.classList.add("hidden"));
       if (name === "banners") viewBanners.classList.remove("hidden");
       if (name === "services") viewServices.classList.remove("hidden");
       if (name === "testimonials") viewTestimonials.classList.remove("hidden");
@@ -277,136 +295,158 @@ const viewIcons = document.getElementById("view-icons");
     navServices.onclick = () => showView("services");
     navTestimonials.onclick = () => showView("testimonials");
     navAnnouncements.onclick = () => showView("announcements");
-
-navIcons.onclick = () => showView("icons");
+    navIcons.onclick = () => showView("icons");
 
     // Profile & auth (fill profile, check role)
     onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    profileName.textContent = "Not signed in";
-    profileEmail.textContent = "";
-    signedRole.textContent = "guest";
-    return;  // DO NOT redirect – guard.js handles auth
-  }
+      if (!user) {
+        profileName.textContent = "Not signed in";
+        profileEmail.textContent = "";
+        signedRole.textContent = "guest";
+        return;  // guard.js handles redirect if needed
+      }
 
-  // Load user doc
-  let data = {};
-  try {
-    const udoc = await getDoc(doc(db, "users", user.uid));
-    if (udoc.exists()) data = udoc.data();
-  } catch (e) {
-    console.error("Failed to read user doc:", e);
-  }
+      // Load user doc (optional)
+      let data = {};
+      try {
+        const udoc = await getDoc(doc(db, "users", user.uid));
+        if (udoc.exists()) data = udoc.data();
+      } catch (e) {
+        console.error("Failed to read user doc:", e);
+      }
 
-  // Update sidebar UI
-  const defaultPhoto =
-    "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
+      const defaultPhoto =
+        "https://raw.githubusercontent.com/bookscoffeedreams/bookscoffeedreams.github.io/refs/heads/main/assets/images/account_logo_default.png";
 
-  const finalPhoto = data.photoURL || data.profileURL || user.photoURL || defaultPhoto;
+      const finalPhoto = data.photoURL || data.profileURL || user.photoURL || defaultPhoto;
 
-  profilePic.src = finalPhoto;
-  profileName.textContent = data.name || user.displayName || "Admin";
-  profileEmail.textContent = data.email || user.email;
-  signedRole.textContent = data.role || "admin";
-});
-    // ===================== BANNERS realtime + CRUD + sortable =====================
+      profilePic.src = finalPhoto;
+      profileName.textContent = data.name || user.displayName || "Admin";
+      profileEmail.textContent = data.email || user.email;
+      signedRole.textContent = data.role || "admin";
+    });
+
+    // Utility escapeHtml
+    function escapeHtml(str='') { return String(str || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]); }
+
+    // Upload helper (Cloudinary unsigned preset kept as before)
+    async function uploadToCloudinary(file) {
+      const cloudName = "dkxuilgai";
+      const preset = "bcd_courses";
+      const folder = "bcd_courses";
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("upload_preset", preset);
+      fd.append("folder", folder);
+
+      // small UI hint
+      try { uploadStatus.textContent = "Uploading..."; } catch(e){/*no-op*/}
+
+      const res = await fetch(url, { method: "POST", body: fd });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error("Cloudinary upload failed: " + txt);
+      }
+      const json = await res.json();
+      try { uploadStatus.textContent = "Uploaded"; } catch(e){/*no-op*/}
+      return json.secure_url || json.url;
+    }
+
+    // ---------------------- BANNERS (kept original logic but safer) ----------------------
     import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(() => {
       const bannersQuery = query(collection(db, "banners"), orderBy("order"));
-      let bannersSortable = null;
+      if (bannersQuery) {
+        onSnapshot(bannersQuery, snap => {
+          bannersList.innerHTML = "";
+          const frag = document.createDocumentFragment();
+          snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const id = docSnap.id;
+            const wrapper = document.createElement("div");
+            wrapper.className = "p-3 bg-white rounded-lg shadow-sm";
+            wrapper.setAttribute("data-id", id);
 
-      onSnapshot(bannersQuery, snap => {
-        bannersList.innerHTML = "";
-        const frag = document.createDocumentFragment();
+            // safer DOM build
+            const row = document.createElement('div'); row.className = "flex flex-col md:flex-row md:items-center gap-4";
+            const img = document.createElement('img'); img.className = "big-banner-preview md:w-2/3";
+            img.alt = d.title || '';
+            img.src = d.imageUrl || '';
+            img.onerror = function(){ this.style.opacity=0.6; this.style.filter='grayscale(40%)'; };
+            const info = document.createElement('div'); info.className = "flex-1 flex flex-col gap-2";
+            const top = document.createElement('div'); top.className = "flex items-center justify-between";
+            const left = document.createElement('div');
+            const titleEl = document.createElement('div'); titleEl.className='font-semibold text-lg'; titleEl.textContent = d.title || '—';
+            const linkEl = document.createElement('div'); linkEl.className='muted text-sm'; linkEl.textContent = d.link || '';
+            left.appendChild(titleEl); left.appendChild(linkEl);
+            const right = document.createElement('div'); right.className='flex gap-2';
+            const editBtn = document.createElement('button'); editBtn.className='edit-banner text-indigo-600 font-medium'; editBtn.dataset.id = id; editBtn.textContent='Edit';
+            const delBtn = document.createElement('button'); delBtn.className='del-banner text-red-600 font-medium'; delBtn.dataset.id = id; delBtn.textContent='Delete';
+            right.appendChild(editBtn); right.appendChild(delBtn);
+            top.appendChild(left); top.appendChild(right);
+            const createdEl = document.createElement('div'); createdEl.className='muted text-sm'; createdEl.textContent = 'Added: ' + (d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : String(d.createdAt)) : '—');
+            const orderEl = document.createElement('div'); orderEl.className='muted text-sm'; orderEl.textContent = 'Order: ' + (typeof d.order === 'number' ? d.order : '—');
+            info.appendChild(top); info.appendChild(createdEl); info.appendChild(orderEl);
+            row.appendChild(img); row.appendChild(info);
+            wrapper.appendChild(row);
+            frag.appendChild(wrapper);
+          });
+          bannersList.appendChild(frag);
 
-        snap.forEach(docSnap => {
-          const d = docSnap.data();
-          const id = docSnap.id;
+          // attach handlers
+          bannersList.querySelectorAll('.del-banner').forEach(btn => {
+            btn.onclick = async (e) => {
+              const id = e.currentTarget.dataset.id;
+              const res = await Swal.fire({ title: 'Delete banner?', text: 'This will remove the banner permanently.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' });
+              if (res.isConfirmed) {
+                await deleteDoc(doc(db, "banners", id));
+                Swal.fire('Deleted', '', 'success');
+              }
+            };
+          });
 
-          const wrapper = document.createElement("div");
-          wrapper.className = "p-3 bg-white rounded-lg shadow-sm";
-          wrapper.setAttribute("data-id", id);
-          wrapper.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
-              <img src="${escapeHtml(d.imageUrl || '')}" class="big-banner-preview md:w-2/3" alt="${escapeHtml(d.title || '')}" onerror="this.style.opacity=0.6; this.style.filter='grayscale(40%)'"/>
-              <div class="flex-1 flex flex-col gap-2">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <div class="font-semibold text-lg">${escapeHtml(d.title || '—')}</div>
-                    <div class="muted text-sm">${escapeHtml(d.link || '')}</div>
-                  </div>
-                  <div class="flex gap-2">
-                    <button class="edit-banner text-indigo-600 font-medium" data-id="${id}">Edit</button>
-                    <button class="del-banner text-red-600 font-medium" data-id="${id}">Delete</button>
-                  </div>
-                </div>
-                <div class="muted text-sm">Added: ${d.createdAt ? (d.createdAt.toDate ? d.createdAt.toDate().toLocaleString() : String(d.createdAt)) : '—'}</div>
-                <div class="muted text-sm">Order: ${typeof d.order === 'number' ? d.order : '—'}</div>
-              </div>
-            </div>
-          `;
+          bannersList.querySelectorAll('.edit-banner').forEach(btn => {
+            btn.onclick = async (e) => {
+              const id = e.currentTarget.dataset.id;
+              const docRef = doc(db, "banners", id);
+              const docSnap = await getDoc(docRef);
+              const data = docSnap.data();
+              const { value } = await Swal.fire({
+                title: 'Edit Banner',
+                html:
+                  `<input id="swal-title" class="swal2-input" placeholder="Title" value="${escapeHtml(data.title||'')}">` +
+                  `<input id="swal-link" class="swal2-input" placeholder="Link" value="${escapeHtml(data.link||'')}">` +
+                  `<input id="swal-image" class="swal2-input" placeholder="Image URL" value="${escapeHtml(data.imageUrl||'')}">`,
+                preConfirm: () => ({
+                  title: document.getElementById('swal-title').value,
+                  link: document.getElementById('swal-link').value,
+                  imageUrl: document.getElementById('swal-image').value
+                }),
+                width: 650
+              });
+              if (value) {
+                await updateDoc(docRef, { title: value.title, link: value.link, imageUrl: value.imageUrl });
+                Swal.fire('Saved', '', 'success');
+              }
+            };
+          });
 
-          frag.appendChild(wrapper);
-        });
-
-        bannersList.appendChild(frag);
-
-        // attach handlers
-        bannersList.querySelectorAll('.del-banner').forEach(btn => {
-          btn.onclick = async (e) => {
-            const id = e.currentTarget.dataset.id;
-            const res = await Swal.fire({
-              title: 'Delete banner?',
-              text: 'This will remove the banner permanently.',
-              icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444'
-            });
-            if (res.isConfirmed) {
-              await deleteDoc(doc(db, "banners", id));
-              Swal.fire('Deleted', '', 'success');
+          // make sortable
+          if (window._bannersSortable) window._bannersSortable.destroy();
+          window._bannersSortable = new Sortable(bannersList, {
+            animation: 160,
+            handle: '.big-banner-preview',
+            onEnd: async () => {
+              const items = Array.from(bannersList.children);
+              for (let i = 0; i < items.length; i++) {
+                const id = items[i].getAttribute('data-id');
+                await updateDoc(doc(db, "banners", id), { order: i });
+              }
+              Swal.fire({ icon: 'success', title: 'Order saved', timer: 900, showConfirmButton: false });
             }
-          };
+          });
         });
-
-        bannersList.querySelectorAll('.edit-banner').forEach(btn => {
-          btn.onclick = async (e) => {
-            const id = e.currentTarget.dataset.id;
-            const docRef = doc(db, "banners", id);
-            const docSnap = await getDoc(docRef);
-            const data = docSnap.data();
-            const { value } = await Swal.fire({
-              title: 'Edit Banner',
-              html:
-                `<input id="swal-title" class="swal2-input" placeholder="Title" value="${escapeHtml(data.title||'')}">` +
-                `<input id="swal-link" class="swal2-input" placeholder="Link" value="${escapeHtml(data.link||'')}">` +
-                `<input id="swal-image" class="swal2-input" placeholder="Image URL" value="${escapeHtml(data.imageUrl||'')}">`,
-              preConfirm: () => ({
-                title: document.getElementById('swal-title').value,
-                link: document.getElementById('swal-link').value,
-                imageUrl: document.getElementById('swal-image').value
-              }),
-              width: 650
-            });
-            if (value) {
-              await updateDoc(docRef, { title: value.title, link: value.link, imageUrl: value.imageUrl });
-              Swal.fire('Saved', '', 'success');
-            }
-          };
-        });
-
-        // make sortable
-        if (window._bannersSortable) window._bannersSortable.destroy();
-        window._bannersSortable = new Sortable(bannersList, {
-          animation: 160,
-          handle: '.big-banner-preview',
-          onEnd: async () => {
-            const items = Array.from(bannersList.children);
-            for (let i = 0; i < items.length; i++) {
-              const id = items[i].getAttribute('data-id');
-              await updateDoc(doc(db, "banners", id), { order: i });
-            }
-            Swal.fire({ icon: 'success', title: 'Order saved', timer: 900, showConfirmButton: false });
-          }
-        });
-      });
+      }
     });
 
     // ===================== Services realtime + sortable =====================
@@ -500,129 +540,203 @@ navIcons.onclick = () => showView("icons");
       });
     });
 
-    // SUBJECT ICONS
-onSnapshot(collection(db, "subject_icons"), snap => {
-  subjectIconsList.innerHTML = "";
-  snap.forEach(doc => {
-    subjectIconsList.innerHTML += `
-      <img src="${doc.data().url}" class="w-20 h-20 rounded-md object-cover border" />
-    `;
-  });
-});
+    // ===================== ICONS: Subjects & Chapter Icons (Option 1 structure) =====================
 
-// CHAPTER ICONS
-onSnapshot(collection(db, "chapter_icons"), snap => {
-  chapterIconsList.innerHTML = "";
-  snap.forEach(doc => {
-    chapterIconsList.innerHTML += `
-      <img src="${doc.data().url}" class="w-20 h-20 rounded-md object-cover border" />
-    `;
-  });
-});
+    // Render subjects (called on snapshot)
+    async function renderSubjectsFromSnapshot(snapshot) {
+      subjectsGrid.innerHTML = '';
+      const subjects = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => ('' + (a.name||'')).localeCompare(b.name||''));
+      if (subjects.length === 0) {
+        subjectsGrid.innerHTML = '<div class="muted">No subjects yet — click "Add Subject" to create one.</div>';
+        return;
+      }
 
-    // ===================== Add handlers =====================
-    // Utility escapeHtml
-    function escapeHtml(str='') {
-      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]);
+      // Pre-fetch chapter counts to avoid N+1 queries: fetch all chapters once
+      const chapterSnap = await getDocs(collection(db, 'chapter_icons'));
+      const chapters = chapterSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const chaptersBySubject = {};
+      for (const ch of chapters) {
+        if (!chaptersBySubject[ch.subjectId]) chaptersBySubject[ch.subjectId] = [];
+        chaptersBySubject[ch.subjectId].push(ch);
+      }
+
+      for (const sub of subjects) {
+        const card = document.createElement('div'); card.className = 'subject-card'; card.dataset.id = sub.id;
+
+        // actions (open, rename, delete)
+        const actions = document.createElement('div'); actions.className = 'subject-actions';
+        const openBtn = document.createElement('button'); openBtn.className='btn-ghost'; openBtn.title='Open'; openBtn.innerHTML = '🔽';
+        const editBtn = document.createElement('button'); editBtn.className='btn-ghost'; editBtn.title='Rename'; editBtn.innerHTML='✏️';
+        const delBtn = document.createElement('button'); delBtn.className='btn-ghost'; delBtn.title='Delete'; delBtn.innerHTML='🗑️';
+        actions.appendChild(openBtn); actions.appendChild(editBtn); actions.appendChild(delBtn);
+
+        // title block
+        const title = document.createElement('div'); title.className='title';
+        const badge = document.createElement('div'); badge.style.cssText = "width:40px;height:40px;border-radius:10px;background:linear-gradient(90deg,var(--accent1),var(--accent2));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;margin-right:8px";
+        badge.textContent = escapeHtml((sub.name||'').slice(0,1).toUpperCase());
+        title.appendChild(badge);
+        const nameWrap = document.createElement('div'); nameWrap.innerHTML = `<div>${escapeHtml(sub.name || 'Untitled')}</div>`;
+        title.appendChild(nameWrap);
+
+        const meta = document.createElement('div'); meta.className='meta';
+        const cnt = (chaptersBySubject[sub.id] || []).length;
+        meta.textContent = `${cnt} icon${cnt === 1 ? '' : 's'}`;
+
+        // chapter area (initially hidden)
+        const chapterArea = document.createElement('div'); chapterArea.className = 'chapter-area';
+
+        // fab (upload)
+        const fab = document.createElement('button'); fab.className='fab-upload'; fab.innerHTML = '+'; fab.title = 'Upload chapter icon';
+
+        card.appendChild(actions);
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.appendChild(chapterArea);
+        card.appendChild(fab);
+        subjectsGrid.appendChild(card);
+
+        // DELETE subject: remove subject and its chapters
+        delBtn.onclick = async () => {
+          const res = await Swal.fire({ title: 'Delete subject?', text: `Delete "${sub.name}" and all its chapter icons?`, icon:'warning', showCancelButton:true });
+          if (!res.isConfirmed) return;
+          // delete chapters for this subject
+          const csnap = await getDocs(query(collection(db, 'chapter_icons')));
+          const deletes = [];
+          csnap.forEach(c => { if (c.data().subjectId === sub.id) deletes.push(deleteDoc(doc(db,'chapter_icons', c.id))); });
+          await Promise.all(deletes);
+          await deleteDoc(doc(db, 'subject_icons', sub.id));
+          Swal.fire('Deleted','', 'success');
+        };
+
+        // Rename subject
+        editBtn.onclick = async () => {
+          const { value: newName } = await Swal.fire({ title:'Rename Subject', input:'text', inputValue: sub.name || '', showCancelButton:true });
+          if (newName && newName.trim()) await updateDoc(doc(db,'subject_icons', sub.id), { name: newName.trim() });
+        };
+
+        // Open/close subject: render chapter icons
+        openBtn.onclick = async () => {
+          if (card.classList.contains('expanded')) { card.classList.remove('expanded'); chapterArea.innerHTML = ''; return; }
+          card.classList.add('expanded');
+          chapterArea.innerHTML = '<div class="muted">Loading icons...</div>';
+
+          // get chapters for this subject (we already fetched earlier; better to query live for up-to-date)
+          const cSnap = await getDocs(query(collection(db,'chapter_icons'), orderBy('createdAt')));
+          const chs = [];
+          cSnap.forEach(c => { if (c.data().subjectId === sub.id) chs.push({ id: c.id, ...c.data() }); });
+
+          meta.textContent = `${chs.length} icon${chs.length === 1 ? '' : 's'}`;
+
+          const grid = document.createElement('div'); grid.className = 'chapter-grid';
+          if (chs.length === 0) {
+            grid.innerHTML = '<div class="muted">No chapter icons yet — upload one.</div>';
+          } else {
+            for (const ch of chs) {
+              const tile = document.createElement('div'); tile.className = 'chapter-tile';
+              const img = document.createElement('img'); img.src = ch.url; img.alt = ch.name || '';
+              tile.appendChild(img);
+
+              const chActions = document.createElement('div'); chActions.className = 'chapter-actions';
+              const viewCh = document.createElement('button'); viewCh.className = 'btn-ghost'; viewCh.innerHTML = '🔎'; viewCh.title='View';
+              const delCh = document.createElement('button'); delCh.className = 'btn-ghost'; delCh.innerHTML = '🗑️'; delCh.title='Delete';
+              chActions.appendChild(viewCh); chActions.appendChild(delCh);
+              tile.appendChild(chActions);
+              grid.appendChild(tile);
+
+              viewCh.onclick = () => Swal.fire({ imageUrl: ch.url, imageAlt: ch.name || 'icon', showConfirmButton: true });
+              delCh.onclick = async () => {
+                const r = await Swal.fire({ title:'Delete icon?', icon:'warning', showCancelButton:true });
+                if (!r.isConfirmed) return;
+                await deleteDoc(doc(db,'chapter_icons', ch.id));
+                Swal.fire('Deleted','', 'success');
+              };
+            }
+          }
+
+          chapterArea.innerHTML = '';
+          chapterArea.appendChild(grid);
+
+          // wire fab -> upload for this subject (one-time handler per open)
+          fab.onclick = async () => {
+            hiddenChapterFile.onchange = async (e) => {
+              const file = e.target.files[0]; if (!file) return;
+              Swal.fire({ title:'Uploading...', allowOutsideClick:false, didOpen(){ Swal.showLoading(); } });
+              try {
+                const url = await uploadToCloudinary(file);
+                await addDoc(collection(db,'chapter_icons'), { subjectId: sub.id, url, createdAt: serverTimestamp() });
+                Swal.close();
+                Swal.fire('Uploaded','', 'success');
+              } catch (err) {
+                Swal.close();
+                Swal.fire('Upload failed', err.message || String(err), 'error');
+              }
+              hiddenChapterFile.value = '';
+            };
+            hiddenChapterFile.click();
+          };
+        };
+
+        // subscribe to live chapter count update for this subject (keeps meta fresh)
+        onSnapshot(collection(db, 'chapter_icons'), snapCh => {
+          const cntLive = snapCh.docs.filter(c => c.data().subjectId === sub.id).length;
+          meta.textContent = `${cntLive} icon${cntLive === 1 ? '' : 's'}`;
+        });
+      }
     }
-// Upload to Cloudinary with fixed preset & folder
-async function uploadToCloudinary(file) {
-  const cloudName = "dkxuilgai";          // your cloud name
-  const preset = "bcd_courses";           // your unsigned preset
-  const folder = "bcd_courses";           // folder where images will be stored
 
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    // Add Subject (modal with optional subject icon)
+    btnAddSubject.onclick = async () => {
+      const { value: formValues } = await Swal.fire({
+        title: 'Create Subject',
+        html:
+          `<input id="swal-subject-name" class="swal2-input" placeholder="Subject name (e.g. Physics)">` +
+          `<div class="small-muted" style="text-align:left;font-size:13px;margin-top:4px">Optional: upload subject thumbnail after creation (or use edit).</div>`,
+        focusConfirm: false,
+        showCancelButton: true,
+        preConfirm: () => {
+          return { name: document.getElementById('swal-subject-name').value.trim() };
+        }
+      });
+      if (!formValues || !formValues.name) return;
+      // create subject
+      const subRef = await addDoc(collection(db, 'subject_icons'), { name: formValues.name, createdAt: serverTimestamp() });
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      // re-render will be triggered by snapshot
+    };
 
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", preset);
-  fd.append("folder", folder);
+    // Real-time subjects listener -> re-render
+    onSnapshot(query(collection(db,'subject_icons'), orderBy('name')), snapshot => {
+      renderSubjectsFromSnapshot(snapshot).catch(console.error);
+    });
 
-  uploadStatus.textContent = "Uploading...";
+    // -------------------- Add handlers for old upload buttons removed (we removed them from UI) --------------------
 
-  const res = await fetch(url, { method: "POST", body: fd });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error("Cloudinary upload failed: " + txt);
-  }
-
-  const json = await res.json();
-  uploadStatus.textContent = "Uploaded";
-
-  return json.secure_url || json.url;
-}
+    // -------------------- Banner upload handler (kept) --------------------
     uploadBannerBtn.onclick = async () => {
-  try {
-    const file = bannerFile.files[0];
-    if (!file) return Swal.fire('No file', 'Please choose an image file to upload.', 'warning');
+      try {
+        const file = bannerFile.files[0];
+        if (!file) return Swal.fire('No file', 'Please choose an image file to upload.', 'warning');
+        uploadBannerBtn.disabled = true;
+        const imageUrl = await uploadToCloudinary(file);
 
-    uploadBannerBtn.disabled = true;
+        // delete existing banners (allow only one)
+        const snap = await getDocs(collection(db, "banners"));
+        const deletes = [];
+        snap.forEach((docSnap) => { deletes.push(deleteDoc(doc(db, "banners", docSnap.id))); });
+        await Promise.all(deletes);
 
-    // Upload new image to Cloudinary
-    const imageUrl = await uploadToCloudinary(file);
+        await addDoc(collection(db, "banners"), { imageUrl, createdAt: serverTimestamp(), order: 0 });
 
-    // DELETE existing banner (allow only ONE)
-    const snap = await getDocs(collection(db, "banners"));
-    snap.forEach(async (docSnap) => {
-      await deleteDoc(doc(db, "banners", docSnap.id));
-    });
-
-    // ADD new banner
-    await addDoc(collection(db, "banners"), {
-      imageUrl,
-      createdAt: serverTimestamp(),
-      order: 0
-    });
-
-    bannerFile.value = '';
-    uploadStatus.textContent = '';
-    confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
-
-    Swal.fire({ icon: 'success', title: 'Banner updated', timer: 900, showConfirmButton: false });
-
-  } catch (err) {
-    console.error(err);
-    Swal.fire('Upload error', err.message || String(err), 'error');
-  } finally {
-    uploadBannerBtn.disabled = false;
-  }
-};
-
-    uploadSubjectIcon.onclick = async () => {
-  const file = iconFile.files[0];
-  if (!file) return Swal.fire("Select a file first", "", "warning");
-
-  const url = await uploadToCloudinary(file);
-
-  await addDoc(collection(db, "subject_icons"), {
-    url,
-    createdAt: serverTimestamp()
-  });
-
-  iconFile.value = "";
-  Swal.fire("Subject Icon Uploaded!", "", "success");
-};
-
-uploadChapterIcon.onclick = async () => {
-  const file = iconFile.files[0];
-  if (!file) return Swal.fire("Select a file first", "", "warning");
-
-  const url = await uploadToCloudinary(file);
-
-  await addDoc(collection(db, "chapter_icons"), {
-    url,
-    createdAt: serverTimestamp()
-  });
-
-  iconFile.value = "";
-  Swal.fire("Chapter Icon Uploaded!", "", "success");
-};
-
-    document.getElementById("clearBannerForm").onclick = () => {
-      bannerTitle.value = '';
-      bannerLink.value = '';
-      bannerFile.value = '';
-      uploadStatus.textContent = '';
+        bannerFile.value = '';
+        uploadStatus.textContent = '';
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+        Swal.fire({ icon: 'success', title: 'Banner updated', timer: 900, showConfirmButton: false });
+      } catch (err) {
+        console.error(err);
+        Swal.fire('Upload error', err.message || String(err), 'error');
+      } finally {
+        uploadBannerBtn.disabled = false;
+      }
     };
 
     // Services add
@@ -666,13 +780,12 @@ uploadChapterIcon.onclick = async () => {
     document.getElementById("btn-signout").onclick = async () => {
       try { await signOut(auth); location.reload(); } catch (err) { console.error(err); Swal.fire('Error', err.message, 'error'); }
     };
+
   </script>
+
   <script type="module">
-  import { requirePermission } from "/admin/guard-v10.js";
-
-  await requirePermission("manageContent"); // FULL ACCESS TO THIS PAGE
-
-  // Page is allowed → nothing else needed
-</script>
+    import { requirePermission } from "/admin/guard-v10.js";
+    await requirePermission("manageContent"); // FULL ACCESS TO THIS PAGE
+  </script>
 </body>
 </html>
