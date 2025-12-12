@@ -14,6 +14,8 @@
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  
   <!-- SweetAlert -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -185,6 +187,85 @@
     @media (max-width:1024px){
       .rev-left{ width:100%; } 
     }
+    /* --- Block card visual upgrade --- */
+.block-card {
+  background: white;                 /* cleaner surface */
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(16,24,40,0.04);
+  box-shadow: 0 6px 20px rgba(16,24,40,0.04);
+  transition: transform .16s ease, box-shadow .16s ease;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+
+/* lift on hover */
+.block-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 40px rgba(16,24,40,0.07);
+}
+
+/* meta column reduced width so body gets more space */
+.block-card .meta { width:100px; min-width:100px; font-size:13px; color:var(--muted); }
+
+/* nicer body area */
+.block-card .body { flex:1; min-width:0; }
+
+/* small badge for block type */
+.block-type-badge {
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:8px;
+  background: rgba(99,102,241,0.10);
+  color: var(--accent-b);
+  font-weight:800;
+  font-size:12px;
+  margin-bottom:6px;
+}
+
+/* icon style for small toolbar buttons */
+.icon-btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px;
+  border-radius:8px;
+  border:1px solid rgba(16,24,40,0.04);
+  background:transparent;
+  cursor:pointer;
+  width:36px;
+  height:36px;
+  transition: background .12s, color .12s, transform .12s;
+}
+.icon-btn:hover {
+  background: rgba(99,102,241,0.10);
+  color:var(--accent-b);
+  transform:translateY(-2px);
+}
+
+/* small divider to split categories and controls */
+.block-divider { height:1px; background:rgba(16,24,40,0.04); margin:10px 0; border-radius:2px; }
+
+/* drag handle visual */
+.drag-handle {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:8px;
+  cursor:grab;
+  color:rgba(11,18,32,0.5);
+}
+.drag-handle:active { cursor:grabbing; }
+
+/* responsive tweak: stack meta above on small screens */
+@media (max-width:760px) {
+  .block-card { flex-direction:column; }
+  .block-card .meta { width:100%; min-width:auto; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+}
   </style>
 </head>
 <body>
@@ -252,8 +333,8 @@
               <div class="block-btn" data-type="imageText"><i class="fa-solid fa-columns"></i> <div><div style="font-weight:700">Image + Text</div><div class="small muted">Side-by-side</div></div></div>
               <div class="block-btn" data-type="bullets"><i class="fa-solid fa-list"></i> <div><div style="font-weight:700">Bullet List</div><div class="small muted">Multiple bullets</div></div></div>
               <div class="block-btn" data-type="numbered"><i class="fa-solid fa-list-ol"></i> <div><div style="font-weight:700">Numbered List</div><div class="small muted">Ordered</div></div></div>
-              <div class="block-btn" data-type="keypoints"><i class="fa-solid fa-star"></i> <div><div style="font-weight:700">Important Points</div><div class="small muted">Toggle ON/OFF</div></div></div>
-              <div class="block-btn" data-type="confusions"><i class="fa-solid fa-question-circle"></i> <div><div style="font-weight:700">Common Confusions</div><div class="small muted">Toggle ON/OFF</div></div></div>
+              <div class="block-btn" data-type="keypoints"><i class="fa-solid fa-star"></i> <div><div style="font-weight:700">Important Points</div><div class="small muted">Category-based</div></div></div>
+              <div class="block-btn" data-type="confusions"><i class="fa-solid fa-question-circle"></i> <div><div style="font-weight:700">Common Confusions</div><div class="small muted">Category-based</div></div></div>
               <div class="block-btn" data-type="formulas"><i class="fa-solid fa-superscript"></i> <div><div style="font-weight:700">Formula Sheet</div><div class="small muted">LaTeX/KaTeX</div></div></div>
               <div class="block-btn" data-type="tableImage"><i class="fa-solid fa-table"></i> <div><div style="font-weight:700">Table / Flowchart</div><div class="small muted">Image or grid</div></div></div>
               <div class="block-btn" data-type="example"><i class="fa-solid fa-lightbulb"></i> <div><div style="font-weight:700">Example</div><div class="small muted">Worked example</div></div></div>
@@ -404,6 +485,16 @@
       if(history.past.length>100) history.past.shift();
       history.future = []; // clear redo
     }
+    // ⭐ ADD THIS DEBOUNCE CODE HERE
+function debounce(fn, wait = 120){
+  let t;
+  return (...args)=>{
+    clearTimeout(t);
+    t = setTimeout(()=>fn(...args), wait);
+  };
+}
+const debouncedPreview = debounce(renderPreview, 120);
+
     function undo(){
       if(!history.past.length) return;
       const cur = JSON.stringify(BLOCKS);
@@ -477,15 +568,19 @@
         card.dataset.id = b.id;
         card.innerHTML = `
           <div class="meta">
-            <div style="font-weight:800">${b.type}</div>
-            <div class="small muted">#${idx+1}</div>
-            <div style="margin-top:8px" class="block-actions">
-              <button class="btn" data-act="up"><i class="fa-solid fa-arrow-up"></i></button>
-              <button class="btn" data-act="down"><i class="fa-solid fa-arrow-down"></i></button>
-              <button class="btn" data-act="duplicate"><i class="fa-solid fa-copy"></i></button>
-              <button class="btn" data-act="remove"><i class="fa-solid fa-trash"></i></button>
-            </div>
-          </div>
+  <div style="display:flex;flex-direction:column;gap:6px;">
+    <span class="block-type-badge">${escapeHtml(capitalize(b.type))}</span>
+    <div class="small muted">#${idx+1}</div>
+  </div>
+
+  <div style="margin-top:8px" class="block-actions" aria-hidden="true">
+    <button class="icon-btn" data-act="duplicate" title="Duplicate"><i class="fa-solid fa-copy"></i></button>
+    <button class="icon-btn" data-act="remove" title="Remove"><i class="fa-solid fa-trash"></i></button>
+    <button class="icon-btn" data-act="up" title="Move up"><i class="fa-solid fa-arrow-up"></i></button>
+    <button class="icon-btn" data-act="down" title="Move down"><i class="fa-solid fa-arrow-down"></i></button>
+    <span class="drag-handle" title="Drag to reorder"><i class="fa-solid fa-grip-vertical"></i></span>
+  </div>
+</div>
           <div class="body" id="body_${b.id}"></div>
         `;
         editorCanvas.appendChild(card);
@@ -823,8 +918,35 @@
         // attach events in this block
         attachBlockEvents(b, card);
       });
+      initSortableEditor();
     }
     
+let _sortableEditor = null;
+
+function initSortableEditor() {
+  if (_sortableEditor) {
+    try { _sortableEditor.destroy(); } catch (e) {}
+  }
+
+  _sortableEditor = new Sortable(editorCanvas, {
+    animation: 150,
+    handle: ".drag-handle",
+    ghostClass: "sortable-ghost",
+    onEnd: evt => {
+      const oldIndex = evt.oldIndex;
+      const newIndex = evt.newIndex;
+      if (oldIndex === newIndex) return;
+
+      pushHistory(BLOCKS);
+      const moved = BLOCKS.splice(oldIndex, 1)[0];
+      BLOCKS.splice(newIndex, 0, moved);
+
+      renderEditor();
+      renderPreview();
+      markDirty();
+    }
+  });
+}
 
 
     // ---------- Attach block events ----------
@@ -902,7 +1024,7 @@
     block[prop] = inp.value;
   }
 }
-          renderPreview();
+          debouncedPreview();
           markDirty();
         });
       });
@@ -912,7 +1034,7 @@
         inp.addEventListener('input', ()=> {
           const i = +inp.dataset.itemIndex;
           block.items[i] = inp.value;
-          renderPreview();
+          debouncedPreview();
           markDirty();
         });
       });
@@ -920,7 +1042,7 @@
         inp.addEventListener('input', ()=> {
           const i = +inp.dataset.formulaIndex;
           block.formulas[i] = inp.value;
-          renderPreview();
+          debouncedPreview();
           markDirty();
         });
       });
@@ -928,7 +1050,7 @@
         inp.addEventListener('input', ()=> {
           const i = +inp.dataset.stepIndex;
           block.steps[i] = inp.value;
-          renderPreview();
+          debouncedPreview();
           markDirty();
         });
       });
