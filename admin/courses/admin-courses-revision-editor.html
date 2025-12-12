@@ -582,24 +582,49 @@ const debouncedPreview = debounce(renderPreview, 120);
 
     // ---------- Block factory ----------
     function defaultBlock(type){
-      const base = { id: uid('blk'), type, meta:{}, toggles:{}, categories: [] };
-      switch(type){
-        case 'heading': return {...base, level:1, text:'Heading text' };
-        case 'paragraph': return {...base, text:'Write explanation here...' };
-        case 'image': return {...base, url:'', caption:'' };
-        case 'imageText': return {...base, imageUrl:'', text:'Explanation for image', imageLeft:true };
-        case 'bullets': return {...base, items: ['Point 1','Point 2'] };
-        case 'numbered': return {...base, items: ['Step 1','Step 2'] };
-        case 'keypoints': return {...base, items: ['Key 1','Key 2'] };
-        case 'confusions': return {...base, items: ['Confusion 1']};
-        case 'formulas': return {...base, formulas: ['E=mc^2','F = ma']};
-        case 'tableImage': return {...base, url:'', caption:''};
-        case 'example': return {...base, title:'Example', steps:['Step 1','Solution...'] };
-        case 'warning': return {...base, text:'Watch out for this common error' };
-        default: return {...base};
-      }
-    }
+  const base = { id: uid('blk'), type, meta:{}, toggles:{}, categories: [] };
 
+  switch(type){
+    case 'heading':
+      return { ...base, level: 1, text: '', placeholder: 'Heading...' };
+
+    case 'paragraph':
+      return { ...base, text: '', placeholder: 'Write something...' };
+
+    case 'image':
+      return { ...base, url: '', caption: '' };
+
+    case 'imageText':
+      return { ...base, imageUrl: '', text: '', imageLeft: true, placeholder: 'Explanation...' };
+
+    case 'bullets':
+      return { ...base, items: [] };
+
+    case 'numbered':
+      return { ...base, items: [] };
+
+    case 'keypoints':
+      return { ...base, items: [], toggles:{visible:true} };
+
+    case 'confusions':
+      return { ...base, items: [], toggles:{visible:true} };
+
+    case 'formulas':
+      return { ...base, formulas: [], toggles:{visible:true} };
+
+    case 'tableImage':
+      return { ...base, url: '', caption:'' };
+
+    case 'example':
+      return { ...base, title:'', steps:[] };
+
+    case 'warning':
+      return { ...base, text:'', placeholder:'Warning text...' };
+
+    default:
+      return { ...base };
+  }
+}
     // ---------- UI: add block ----------
     blockPalette.querySelectorAll('.block-btn').forEach(btn=>{
       btn.addEventListener('click', ()=> {
@@ -675,7 +700,9 @@ const debouncedPreview = debounce(renderPreview, 120);
               </select>
             </div>
             <div style="margin-top:8px;">
-              <input class="input" data-prop="text" value="${escapeHtml(b.text)}" />
+              <input class="input" data-prop="text" 
+       placeholder="${escapeHtml(b.placeholder || '')}"
+       value="${escapeHtml(b.text)}" />
             </div>
           `;
         } else if(b.type === 'paragraph'){
@@ -701,7 +728,8 @@ const debouncedPreview = debounce(renderPreview, 120);
     </label>
   </div>
 </div>
-<textarea class="input" data-prop="text">${escapeHtml(b.text)}</textarea>`;
+<textarea class="input" data-prop="text"
+          placeholder="${escapeHtml(b.placeholder || '')}">${escapeHtml(b.text)}</textarea>`;
         } else if(b.type === 'image'){
           body.innerHTML = `
           <!-- CATEGORY TAGS -->
