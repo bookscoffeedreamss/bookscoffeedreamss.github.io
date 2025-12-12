@@ -477,6 +477,10 @@
     function escapeHtml(s=''){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
     function escapeAttr(s=''){ return String(s||'').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
 
+    function capitalize(s=''){ 
+  return String(s).charAt(0).toUpperCase() + String(s).slice(1); 
+}
+    
     // ---------- Helpers ----------
     function uid(pref='b'){ return pref + '_' + Math.random().toString(36).slice(2,9); }
     function markDirty(){ isDirty = true; }
