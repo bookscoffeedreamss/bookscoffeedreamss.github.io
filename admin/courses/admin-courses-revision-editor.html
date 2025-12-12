@@ -266,6 +266,30 @@
   .block-card { flex-direction:column; }
   .block-card .meta { width:100%; min-width:auto; display:flex; justify-content:space-between; align-items:center; gap:8px; }
 }
+    /* === Notion-style Drag Enhancements === */
+
+/* Dragged block stays on top */
+.sortable-drag {
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+/* Ghost preview block (clean card look) */
+.sortable-ghost {
+  background: white !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important;
+  opacity: 0.6 !important;
+}
+
+/* Slight lift animation when dragging starts */
+.block-card.sortable-chosen {
+  transform: scale(1.02);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12) !important;
+}
+#editorCanvas {
+  scroll-behavior: smooth;
+}
   </style>
 </head>
 <body>
@@ -936,6 +960,18 @@ function initSortableEditor() {
     animation: 150,
     handle: ".drag-handle",
     ghostClass: "sortable-ghost",
+    scroll: true,
+scrollSensitivity: 80,
+scrollSpeed: 18,
+scrollFn: function(offsetX, offsetY, originalEvent, touchEvt, draggable) {
+  editorCanvas.scrollTop += offsetY;
+},
+    onStart(evt) {
+  // hide ugly dotted browser drag icon
+  if (evt.originalEvent && evt.originalEvent.dataTransfer) {
+    evt.originalEvent.dataTransfer.setDragImage(new Image(), 0, 0);
+  }
+},
     onEnd: evt => {
       const oldIndex = evt.oldIndex;
       const newIndex = evt.newIndex;
